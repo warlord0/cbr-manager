@@ -1,3 +1,5 @@
+![david-www](https://david-dm.org/warlord0/cbr-manager/dev.svg)
+
 # cbr-manager
 Electron Comic Book Manager &amp; Reader
 
