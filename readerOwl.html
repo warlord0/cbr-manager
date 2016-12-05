@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Comic Book Reader</title>
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="node_modules/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="node_modules/owl.carousel/dist/assets/owl.carousel.min.css" />
+    <link rel="stylesheet" href="node_modules/owl.carousel/dist/assets/owl.theme.default.min.css" />
+    <!--
+    <link href="css/styles.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/owl.carousel.min.css" />
+    <link rel="stylesheet" href="css/owl.theme.default.min.css" />
+-->
+    <style type="text/css">
+        html,
+        body {
+            background-color: black;
+        }
+
+        #navThumb {
+            position: fixed;
+            bottom: 5px;
+            right: 5px;
+            z-index: 1000;
+            opacity: 0.33;
+        }
+
+        #navThumb:hover {
+            opacity: 1.0;
+        }
+
+        #navleft,
+        #navright {
+            position: fixed;
+            top: 50%;
+            z-index: 1000;
+            opacity: 0.33;
+            margin-top: -17px;
+            /* Based on the button being 34px high */
+        }
+
+        #navleft:hover,
+        #navright:hover,
+        #navThumbLeft:hover,
+        #navThumbRight:hover {
+            opacity: 1.0;
+        }
+
+        #navleft,
+        #navThumbLeft {
+            left: 5px;
+        }
+
+        #navright,
+        #navThumbRight {
+            right: 5px;
+        }
+
+        .owl-thumbs {
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            bottom: 0;
+            height: 120px;
+            /* initial width */
+            width: 200%;
+            zdisplay: none;
+            background-color: #222;
+        }
+
+        #owl-thumb-nav {
+            display: none;
+        }
+
+        .owl-thumb-item img {
+            opacity: 0.67;
+            height: 120px;
+            width: auto;
+            float: left;
+        }
+
+        .owl-thumb-item img:hover {
+            opacity: 1.0;
+        }
+
+        #navThumbLeft,
+        #navThumbRight {
+            position: fixed;
+            bottom: 60px;
+            z-index: 1000;
+            opacity: 0.33;
+            margin-bottom: -12px;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <div id="pages" class="owl-carousel owl-theme" data-slider-id="1">
+        </div>
+    </main>
+
+    <nav>
+        <div id="owl-nav">
+            <button class="btn btn-sm btn-default" id="navThumb"><i class="fa fa-chevron-up"></i></button>
+        </div>
+        <div id="owl-thumb-nav">
+            <button class="btn btn-sm btn-default" id="navThumbLeft"><i class="fa fa-chevron-left"></i></button>
+            <button class="btn btn-sm btn-default" id="navThumbRight"><i class="fa fa-chevron-right"></i></button>
+            <div class="owl-thumbs" data-slider-id="1">
+            </div>
+        </div>
+
+    </nav>
+
+
+    <!-- Insert this line above script imports  -->
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+    </script>
+    <!--
+    <script src="js/all.js"></script>
+    <script src="js/owl.carousel.min.js"></script>
+    <script src="js/owl.carousel2.thumbs.min.js"></script>
+    <script src="js/jquery.mousewheel.js"></script>
+    <script src="node_modules/lazysizes/lazysizes.min.js" aync=""></script>
+-->
+
+    <script>
+        global.jQuery = require('jquery/dist/jquery.min.js');
+        global.$ = jQuery;
+        var jQueryUI = require('jqueryui'),
+            jQueryMousewheel = require('jquery-mousewheel/jquery.mousewheel.js')($), // jQuery plugin handling
+            bootstrap = require('bootstrap'),
+            owlCarousel = require('owl.carousel/dist/owl.carousel.min.js'),
+            owlCarouselThumbs = require('owl.carousel2.thumbs/dist/owl.carousel2.thumbs.min.js'),
+            lazysizes = require('lazysizes/lazysizes.min.js');
+
+        const pkg = require('./package.json'),
+            configstore = require('configstore'),
+            cfg = new configstore(pkg.name);
+
+        var pageCount = 0; // TODO: Figure out why we can't get this fron the info: callback
+
+        /**
+         * Scan for images and call GetPages() to load them in the html
+         * Triggers the eventEmmitter 'loaded' when complete
+         *
+         * @params string p folder containing images
+         *
+         * @returns void()
+         */
+        function LoadPages(p) {
+            const fs = require('fs'),
+                path = require('path');
+            var files = [];
+
+            fs.readdir(path.join(__dirname, p), (err, data) => {
+                if (err) {
+                    console.error(err);
+                }
+                data.forEach(function(file) {
+                    switch (path.extname(file)) {
+                        case ".png":
+                        case ".jpg":
+                        case ".jpeg":
+                        case ".gif":
+                            pageCount++;
+                            GetPage(path.join(p, file));
+                            break;
+                    }
+                });
+                eventEmitter.emit('loaded');
+            });
+        }
+
+        /**
+         * Read the image file and add to the pages and thumbnails elements
+         *
+         * @params string file
+         *
+         * @returns void()
+         */
+        function GetPage(file) {
+            var fs = require('fs'),
+                path = require('path'),
+                sizeOf = require('image-size'); // Faster than nativeImage ?
+
+            try {
+                var dimensions = sizeOf(path.join(__dirname, file)),
+                    ratio = dimensions.width / dimensions.height,
+                    $pages = $('div#pages'),
+                    $thumbs = $('div.owl-thumbs');
+
+                $pages.append(
+                    '<img data-merge="' + ((ratio < 1) ? 1 : 2) + '" class="lazyload" data-src="' +
+                    file + '" alt="' + path.basename(file) + '">'
+                );
+                $thumbs.append(
+                    '<div class="owl-thumb-item"><img src="' + file + '" alt="' + path.basename(file, path.extname(file)) + '"></div>'
+                );
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Handle the click of the show/hide thumbs button
+        $('#navThumb').on('click', function(e) {
+            if ($(this).children('i').first().hasClass('fa-chevron-up')) {
+                $(this).children('i').switchClass('fa-chevron-up', 'fa-chevron-down');
+            } else {
+                $(this).children('i').switchClass('fa-chevron-down', 'fa-chevron-up');
+            }
+            $('div#owl-thumb-nav').slideToggle({
+                direction: 'down'
+            });
+        })
+
+        const {BrowserWindow, remote} = require('electron');
+        var reader = remote.getCurrentWindow();
+
+        /*
+        // Reset window as per last session
+        if (cfg.get('reader').maximize == true) {
+            reader.maximize();
+        } else {
+            reader.setSize(
+                    cfg.get('reader').width,
+                    cfg.get('reader').height,
+                    false
+                );
+            reader.setPosition(
+                    cfg.get('reader').x,
+                    cfg.get('reader').y,
+                    false
+                );
+        }
+        */
+
+        $(document).ready(function() {
+
+            LoadPages('images');
+
+            $(window).unload((e) => {
+                // // Save settings
+                // if (!reader.isMaximized() && !reader.isMinimized()) {
+                //     cfg.set('reader', {
+                //         width: reader.getSize()[0],
+                //         height: reader.getSize()[1],
+                //         x: reader.getPosition()[0],
+                //         y: reader.getPosition()[1]
+                //     });
+                // } else if (reader.isMaximized()) {
+                //     cfg.set('reader', {
+                //         maximize: true
+                //     });
+                // }
+
+            })
+        });
+
+        // Event for handling when the owl carousel is populated and  ready
+        const events = require('events');
+        const eventEmitter = new events.EventEmitter();
+
+        eventEmitter.on('loaded', () => {
+            var owl = $('#pages').owlCarousel({
+                thumbs: true,
+                //thumbImage: true,
+                thumbsPrerendered: true,
+                //moveThumbsInside: true,
+                // thumbContainerClass: 'owl-thumbs',
+                // thumbItemClass: 'owl-thumb-item',
+                dotsSpeed: 0, // Go instantly to the page on thumb choice
+                nav: true,
+                navContainer: '#owl-nav',
+                navText: [
+                    '<button class="btn btn-default" id="navleft"><i class="fa fa-chevron-left"></i></button>',
+                    '<button class="btn btn-default" id="navright"><i class="fa fa-chevron-right"></i></button>'
+                ],
+                dots: false,
+                //lazyLoad: true, // Use lazyload.js instead or we get missing pages
+                merge: true,
+                responsiveClass: true,
+                responsive: {
+                    0: {
+                        items: 1,
+                        mergeFit: false
+                    },
+                    1024: {
+                        items: 2,
+                        mergeFit: true,
+                        slideBy: 2
+                    },
+                    1440: {
+                        items: 3,
+                        mergeFit: true,
+                        slideBy: 3
+                    }
+                }
+                // onLoadedLazy: function(e) {
+                //     console.log('lazyLoaded', e);
+                // },
+                // onInitialized: function(e) {
+                //     console.log('Initialized', e);
+                // },
+                // onChanged: function(e) {
+                //     console.log('changed', e);
+                // },
+                // info: function(e, f) {
+                //     console.log('info', e, f);
+                // },
+                // onResize: function(e) {
+                //     console.log('resize', e);
+                // },
+                // onResized: function(e) {
+                //     console.log('resized', e);
+                // }
+            });
+
+            /**
+             * Calculate the total width of the thumbs in the container
+             * and resize the container
+             *
+             * @returns integer totalWidth
+             */
+            function ThumbWidth() {
+                var totalWidth = 0;
+                $('.owl-thumb-item > img').each(function(index, item) {
+                    totalWidth += item.width;
+                });
+                if (totalWidth < $(document).width()) {
+                    totalWidth = $(document).width();
+                }
+                if ($('div.owl-thumbs').width() != totalWidth) {
+                    $('div.owl-thumbs').width(totalWidth);
+                }
+                return totalWidth;
+            }
+
+            owl.on('loaded.owl.lazy', function(e) {
+                console.log(e);
+            });
+
+            // Use the mousewheel - down = scroll forward, up = backwards
+            owl.on('mousewheel', '.owl-stage', function(e) {
+                e.preventDefault();
+                if (e.deltaY > 0) {
+                    owl.trigger('prev.owl');
+                } else {
+                    owl.trigger('next.owl');
+                }
+            });
+
+            // Use some accessibility controls for keyboard users
+            $(document).keydown(function(e) {
+                console.log(pageCount, e);
+                e.preventDefault();
+                if (e.key == "PageDown" || e.key == "ArrowRight" || e.keyCode == 32) {
+                    owl.trigger('next.owl');
+                } else if (e.key == "PageUp" || e.key == "ArrowLeft") {
+                    owl.trigger('prev.owl');
+                } else if (e.key == "Home") {
+                    owl.trigger('to.owl', 0);
+                } else if (e.key == "End") {
+                    owl.trigger('to.owl', pageCount);
+                } else if (e.key == 'x' || e.key == 'X') {
+                    window.close();
+                }
+            });
+
+            window.addEventListener('resize', () => {
+                // Keep the thumbs the width of the document
+                $('.owl-thumbs').width(ThumbWidth());
+            })
+
+            // Handle the thumbnail navigation
+            $('#navThumbRight').on('click', function(e) {
+                e.preventDefault();
+                var thumbs = $('.owl-thumbs'),
+                    width = ThumbWidth(); //thumbs.width(),
+                right = thumbs.position().left + width,
+                    increment = $(document).width();
+                if (right > $(document).width()) {
+                    if ((right - increment) < $(document).width()) { // Don't scroll past the end
+                        increment = right - increment;
+                    }
+                    thumbs.animate({
+                        left: '-=' + increment
+                    });
+                } else {
+                    thumbs.animate({
+                        left: ($(document).width() - width)
+                    });
+                }
+            });
+
+            $('#navThumbLeft').on('click', function(e) {
+                e.preventDefault();
+                var thumbs = $('.owl-thumbs'),
+                    left = thumbs.position().left,
+                    width = ThumbWidth(),
+                    increment = $(document).width();
+                if (left == 0) {} else if ((width - increment) > left && (left - increment) > 0) {
+                    // Don't scroll past beginning
+                    thumbs.animate({
+                        left: "+=" + increment
+                    });
+                } else {
+                    thumbs.animate({
+                        left: 0
+                    });
+                }
+            });
+
+        });
+    </script>
+    <!-- Insert this line after script imports -->
+    <script>
+        if (window.module) module = window.module;
+    </script>
+
+</body>
+
+</html>

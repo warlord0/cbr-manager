@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Comic Book Browser</title>
+
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="node_modules/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="node_modules/jquery.fancytree/dist/skin-lion/ui.fancytree.min.css">
+
+    <style type="text/css">
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+            max-height: 100%;
+            font-family: Sans-serif;
+            line-height: 1.5em;
+            background-color: #000;
+        }
+
+        #nav {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 230px;
+            /* Width of navigation frame */
+            height: 100%;
+            /* overflow: hidden; /* Disables scrollbars on the navigation frame. To enable scrollbars, change "hidden" to "scroll" */
+            overflow: auto;
+            background: #fff;
+        }
+
+        #tree {
+            width: auto;
+            height: 100%;
+            top: 0;
+            left: 0;
+            bottom: 0;
+        }
+
+        main {
+            position: fixed;
+            top: 0;
+            left: 230px;
+            /* Set this to the width of the navigation frame */
+            right: 0;
+            bottom: 0;
+            overflow: auto;
+            background-image: url(images/superhero-icon.png);
+            background-repeat: no-repeat;
+            background-position: center center;
+        }
+
+        #innertube {
+            margin: 15px;
+            /* Provides padding for the content */
+        }
+
+        p {
+            color: #555;
+        }
+
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        nav ul a {
+            color: darkgreen;
+            text-decoration: none;
+        }
+        /*IE6 fix*/
+
+        * html body {
+            padding: 0 0 0 230px;
+            /* Set the last value to the width of the navigation frame */
+        }
+
+        * html main {
+            height: 100%;
+            width: 100%;
+        }
+
+        div.poster {
+            opacity: 0.67;
+            float: left;
+            margin-right: 15px;
+            margin-bottom: 15px;
+            width: 160px;
+            height: 300px;
+            max-height: 300px;
+        }
+
+        div.poster:hover {
+            opacity: 1.0;
+        }
+
+        div.poster p.caption {
+            text-align: center;
+            color: silver;
+        }
+
+        .cover {
+            width: 160px;
+            height: 240px;
+        }
+
+        .cover:hover {
+            -webkit-box-shadow: 0px 0px 15px 0px rgba(255, 255, 255, 1);
+            -moz-box-shadow: 0px 0px 15px 0px rgba(255, 255, 255, 1);
+            box-shadow: 0px 0px 15px 0px rgba(255, 255, 255, 1);
+        }
+
+        ul.fancytree-container {
+            border: none;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <div id="innertube">
+        </div>
+    </main>
+
+    <nav id="nav">
+        <div id="tree" class="fancytree-colorize-hover fancytree-fade-expander"></div>
+    </nav>
+
+    <!-- Insert this line above script imports  -->
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+    </script>
+
+    <script>
+        global.jQuery = require('jquery/dist/jquery.min.js');
+        global.$ = jQuery;
+        var jQueryUI = require('jqueryui'),
+            jQueryFancyTree = require('jquery.fancytree/dist/jquery.fancytree-all.js'),
+            bootstrap = require('bootstrap'),
+            tinysort = require('tinysort/dist/tinysort.js').tinysort;
+    </script>
+
+    <script>
+        // glyph_opts = {
+        //     map: {
+        //         doc: "glyphicon glyphicon-file",
+        //         docOpen: "glyphicon glyphicon-file",
+        //         checkbox: "glyphicon glyphicon-unchecked",
+        //         checkboxSelected: "glyphicon glyphicon-check",
+        //         checkboxUnknown: "glyphicon glyphicon-share",
+        //         dragHelper: "glyphicon glyphicon-play",
+        //         dropMarker: "glyphicon glyphicon-arrow-right",
+        //         error: "glyphicon glyphicon-warning-sign",
+        //         expanderClosed: "glyphicon glyphicon-menu-right",
+        //         expanderLazy: "glyphicon glyphicon-plus-sign",
+        //         expanderOpen: "glyphicon glyphicon-menu-down",
+        //         folder: "glyphicon glyphicon-folder-close",
+        //         folderOpen: "glyphicon glyphicon-folder-open",
+        //         loading: "glyphicon glyphicon-refresh glyphicon-spin"
+        //     }
+        // };
+        const ROOT = '/';
+        $(function() {
+            // Initialize Fancytree
+            $("#tree").fancytree({
+                //extensions: ["wide"],
+                //extensions: ["dnd", "edit", "glyph", "wide"],
+                //checkbox: true,
+                // dnd: {
+                //     focusOnClick: true,
+                //     dragStart: function(node, data) {
+                //         return true;
+                //     },
+                //     dragEnter: function(node, data) {
+                //         return false;
+                //     },
+                //     dragDrop: function(node, data) {
+                //         data.otherNode.copyTo(node, data.hitMode);
+                //     }
+                // },
+                //glyph: glyph_opts,
+                selectMode: 2,
+
+                source: function(event, data) {
+                    var nodes = GetDir(ROOT);
+                    //console.log(nodes);
+                    return nodes;
+                },
+                lazyLoad: function(event, data) {
+                    var dfd = $.Deferred(),
+                        fs = require('fs'),
+                        path = require('path'),
+                        nodepath = NodePath(data.node),
+                        nodes = [];
+
+                    data.result = dfd.promise(); // Use a promise so we can use readdir asynchronously
+
+                    // // Build a node path from getting its parents
+                    // var node = data.node,
+                    //     nodes = [],
+                    //     nodepath = '',
+                    //     parent = node.getParent();
+                    //
+                    // while (parent) {
+                    //     //console.log(parent.title);
+                    //     if (parent.title != ROOT && parent.title != 'root') {
+                    //         nodepath = parent.title + "/" + nodepath;
+                    //         //console.log(nodepath);
+                    //     }
+                    //     parent = parent.getParent();
+                    // }
+                    // nodepath = ROOT + nodepath + node.title
+
+                    fs.readdir(nodepath, function(err, files) {
+                        if (err) {
+                            // throw the error last so we can complete the promise
+                            dfd.resolve([]);
+                            console.error(err);
+                        }
+                        // .map an array so we can filter it
+                        files.map(function(file) {
+                            return file;
+                        }).filter(function(file) {
+                            // Make sure it's a folder
+                            try {
+                                return fs.statSync(path.join(nodepath, file)).isDirectory();
+                            } catch (err) {
+                                console.error(err);
+                                return false;
+                            }
+                        }).forEach(function(file) {
+                            // Build array of node objects
+                            nodes.push({
+                                "title": file,
+                                "expanded": false,
+                                "folder": true,
+                                "lazy": true
+                            });
+                        });
+                        //console.log(nodes);
+                        dfd.resolve(nodes);
+                    });
+                },
+                toggleEffect: {
+                    effect: "drop",
+                    options: {
+                        direction: "left"
+                    },
+                    duration: 400
+                },
+                // wide: {
+                //     iconWidth: "1em", // Adjust this if @fancy-icon-width != "16px"
+                //     iconSpacing: "0.5em", // Adjust this if @fancy-icon-spacing != "3px"
+                //     levelOfs: "1.5em" // Adjust this if ul padding != "16px"
+                // },
+                icon: function(event, data) {
+                    // if( data.node.isFolder() ) {
+                    //   return "glyphicon glyphicon-book";
+                    // }
+                },
+                beforeActivate: function(event, data) {
+                    $('#innertube').children().remove();
+                },
+                activate: function(e, data) {
+                    console.log(NodePath(data.node));
+                    LoadCovers(NodePath(data.node));
+                }
+            });
+
+        });
+
+        function NodePath(node) {
+            // Build a node path from getting its parents
+            var nodepath = '',
+                parent = node.getParent();
+
+            while (parent) {
+                if (parent.title != ROOT && parent.title != 'root') {
+                    nodepath = parent.title + "/" + nodepath;
+                }
+                parent = parent.getParent();
+            }
+            return ROOT + nodepath + node.title
+        }
+
+        /**
+         * Get the specified directory contents synchronously
+         * Done as readdirSync as this is a one time deal at first load
+         * Future calls are made as a lazyload asynchronously
+         *
+         * @param string p path to retrieve
+         */
+        function GetDir(p) {
+            var fs = require('fs'),
+                path = require('path');
+
+            let nodes = [];
+            var files = fs.readdirSync(p);
+            //console.log(files);
+            for (i = 0; i < files.length; i++) {
+                try {
+                    if (!fs.statSync(path.join(p, files[i])).isFile()) {
+                        //console.log({"title": file, "expanded": false, "folder": true, "lazy": true});
+                        nodes.push({
+                            "title": files[i],
+                            "expanded": false,
+                            "folder": true,
+                            "lazy": true
+                        });
+                    } else {
+                        /* In this instance we only want folders */
+                        //nodes.push({"title": files[i]});
+                    }
+                } catch (err) {}
+            }
+            return nodes;
+        }
+
+        const events = require('events');
+        const eventEmitter = new events.EventEmitter();
+
+        eventEmitter.on('cover', (arg) => {
+            var nativeImage = require('electron').nativeImage,
+                path = require('path'),
+                $innertube = $('div#innertube'),
+                id = 'id' + (new Date()).getTime();
+            /* Kinda cute way of doing it with dataurl, but just use src from the cover cache instead */
+            // $innertube.append(
+            //     '<div class="poster" data-id="' + arg[1] + '" id="-' + id + '"><div class="img"><img class="cover" id="' + arg[1] +'" src="' + arg[0].toDataURL() +'"><p class="caption">' + arg[1] + '</p></div>'
+            // );
+            $innertube.append(
+                '<div class="poster" data-id="' + path.basename(arg[0]) + '" id="' + id + '""><div class="img"><img class="cover" id="' + path.basename(arg[1]) + '" src="' + escape(arg[1]) +
+                '"><p class="caption">' + path.basename(arg[0], path.extname(arg[1])) + '</p></div>'
+            );
+            tinysort($('div.poster'), {
+                attr: 'id'
+            }); // Sort the divs by their ID so the files appear in order
+            $('#' + id).on('dblclick', function() { // Attache double click event
+                /* TODO: Should probaly launch the reader here */
+                console.log(this);
+                LaunchReaderIpc(this);
+            })
+        });
+
+        $('#innertube').sortable({ // Use the sortable plugin so files can be dragged and rearranged
+            revert: true
+        });
+
+        /**
+         * Load the cover images from the specified path
+         *
+         * @param p path to retrieve images for
+         */
+        function LoadCovers(p) {
+            const fs = require('fs'),
+                path = require('path');
+            var files = [];
+
+            try {
+                fs.readdir(p, (err, data) => {
+                    if (err) {
+                        console.error(err);
+                    } else {
+                        data.forEach(function(file) {
+                            switch (path.extname(file)) {
+                                case '.cbr':
+                                case '.cbz':
+                                case '.cb7':
+                                    GetCover(path.join(p, file));
+                                    break;
+                            }
+                        });
+                    }
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        const path = require('path');
+        //LoadCovers(path.join(__dirname, 'zips')); // Load the covers for the zips path TODO: change to meaningful path
+
+        /*
+         * Get the specified cover from the file
+         *
+         * @param string file - archive to get the cover from
+         *
+         * @return emits a 'cover' event with a nativeImage and path to the cover
+         */
+        function GetCover(file) {
+            var fs = require('fs'),
+                path = require('path'),
+                crypto = require('crypto'),
+                filehash = crypto.createHash('md5').update(path.basename(file)).digest('hex'),
+                nativeImage = require('electron').nativeImage;
+
+            var coverImg = nativeImage.createFromPath(path.join(__dirname, 'covercache', filehash.substring(0, 2), filehash + ".png"));
+            if (!coverImg.isEmpty()) {
+                eventEmitter.emit('cover', [file, path.join('covercache', filehash.substring(0, 2), filehash + ".png")]); // Trigger the cover event
+                //console.log('cached image ' + file)
+            } else {
+                var path = require('path');
+
+                switch (path.extname(file)) {
+                    case '.cbz':
+                        //case '.zip':
+                    case '.cbr':
+                    case '.cb7':
+                        //case '.rar':
+                        var n7z = require('node-7z'),
+                            files = [], // The array of compressed files
+                            cbr = new n7z();
+
+                        cbr.list(file) // First lets get the first image file from the compressed file
+                            .progress(function(zfiles) {
+                                zfiles.forEach(function(zfile) { // Populate the array of compressed files
+                                    if (path.extname(zfile.name) != '' && '.jpg.jpeg.gif.png'.indexOf(path.extname(zfile.name)) != -1) {
+                                        files.push(zfile.name);
+                                    }
+                                });
+                            })
+                            .then(function(spec) { // Now we have finished the list extract the files
+                                var tmp = require('tmp'); // Create a unique temp dir because we don't want clashing async filenames
+                                tmpDir = tmp.dir({
+                                    prefix: 'tmp_',
+                                    //dir: path.join(__dirname, 'temp'),
+                                    unsafeCleanup: true
+                                }, function _tempDirCreated(err, tmpPath, cleanupCallback) {
+                                    if (err) throw err;
+                                    // console.log(file, files[0]);
+                                    if (files.length > 0) {
+
+                                        files.sort(); // Sort the file array as they may not be stored in order
+                                        cbr.extract(file, tmpPath, {
+                                                    wildcards: files[0]
+                                                } // we only want the first file
+                                            )
+                                            .progress(function(extractedFiles) {
+                                                console.log(extractedFiles[0]);
+                                                try {
+                                                    if (extractedFiles[0].substr(-18) == 'Unsupported Method') {
+                                                        eventEmitter.emit('cover', [file, path.join('images', "nocover.png")]); // Trigger the cover event
+                                                    } else {
+                                                        var coverImg = nativeImage.createFromPath(path.join(tmpPath, extractedFiles[0])), // Load the image
+                                                            buffer = coverImg.resize({
+                                                                height: 240
+                                                            }); //.crop({width: 160});
+                                                        if (buffer.isEmpty()) { // TODO: Something not right here... animated gif?
+                                                            eventEmitter.emit('cover', [file, path.join('images', "nocover.png")]); // Trigger the cover event
+                                                        } else {
+                                                            CacheImage(file, buffer);
+                                                        }
+                                                    }
+                                                } catch (err) {
+                                                    console.error(err);
+                                                    eventEmitter.emit('cover', [file, path.join('images', "nocover.png")]); // Trigger the cover event
+                                                }
+                                            })
+                                            .catch(function(err) {
+                                                console.error(err);
+                                            });
+                                    } else {
+                                        eventEmitter.emit('cover', [file, path.join('images', "nocover.png")]); // Trigger the cover event
+                                    }
+                                });
+                            })
+                            .catch(function(err) {
+                                console.error(err);
+                            });
+                        break;
+                }
+            }
+        }
+
+        function CacheImage(file, buffer) {
+            // Create the folder if it doesn't exist
+            var fs = require('fs'),
+                mkdirp = require('mkdirp'),
+                crypto = require('crypto'),
+                filehash = crypto.createHash('md5').update(path.basename(file)).digest('hex');
+
+            mkdirp(path.join(__dirname, 'covercache', filehash.substring(0, 2)), function(err) {
+                if (err) {
+                    console.error(err);
+                } else {
+                    // Save the buffer to a file as a png (.toPng) format
+                    var png = buffer.toPng();
+                    fs.writeFile(path.join(__dirname, 'covercache', filehash.substring(0, 2), filehash + '.png'), png,
+                        function(err) {
+                            if (err) {
+                                console.error(err);
+                            } else {
+                                //cleanupCallback(); // Now the files writted cleanup the temp dir
+                                //console.log('non-cached image ' + file)
+                                eventEmitter.emit('cover', [file, path.join('covercache', filehash.substring(0, 2), filehash) + '.png']); // Trigger the cover event
+                            }
+                        }
+                    )
+                }
+            });
+        }
+
+        const {ipcRenderer} = require('electron');
+
+        function LaunchReaderIpc(cbr) {
+            ipcRenderer.send('LaunchReader', cbr);
+        }
+
+        function LaunchReader(cbr) {
+            const pkg = require('./package.json'),
+                configstore = require('configstore'),
+                cfg = new configstore(pkg.name);
+
+            //console.log(self);
+            let reader = window.open('readerOwl.html', {
+                parent: require('electron').remote.getCurrentWindow().id,
+                show: true
+                //width: cfg.get('reader').width,
+                //height: cfg.get('reader').height
+            }).focus();
+            //console.log(reader);
+
+        }
+    </script>
+
+    <!-- Insert this line after script imports -->
+    <script>
+        if (window.module) module = window.module;
+    </script>
+
+</body>
+
+</html>
