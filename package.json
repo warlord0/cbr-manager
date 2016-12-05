@@ -12,7 +12,7 @@
     "Tree",
     "test"
   ],
-  "author": "Paul Bargewell",
+  "author": "warlord0",
   "license": "ISC",
   "devDependencies": {
     "electron": "^1.4.7",

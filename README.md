@@ -1,7 +1,7 @@
 # cbr-manager
 Electron Comic Book Manager &amp; Reader
 
-# Not currently fit for consuption
+# Not currently fit for consumption
 
 This is my first foray into Node.js and Electron. It's to be a recreation of an application I originally developed in C# DotNet that I require to become cross platform, hence my use of Electron.
 
