@@ -39,7 +39,7 @@
     "node-7z": "^0.4.0",
     "owl.carousel": "^2.2.0",
     "owl.carousel2.thumbs": "^0.1.8",
-    "slick-carousel": "^1.6.0",
+    "table-parser": "^0.1.3",
     "tinysort": "^2.3.6"
   }
 }

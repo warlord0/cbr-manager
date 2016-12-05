@@ -58,6 +58,20 @@
             background-position: center center;
         }
 
+        #wallpaper {
+            content: "";
+            top:  0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background-repeat: repeat-x;
+            background-position: center center;
+            background-size: 100% auto;
+            z-index: -1;
+            opacity: 0.33;
+            position: fixed;
+        }
+
         #innertube {
             margin: 15px;
             /* Provides padding for the content */
@@ -127,6 +141,7 @@
 
 <body>
     <main>
+        <div id="wallpaper"></div>
         <div id="innertube">
         </div>
     </main>
@@ -171,6 +186,8 @@
         //         loading: "glyphicon glyphicon-refresh glyphicon-spin"
         //     }
         // };
+        // const os = require('os');
+        // const ROOT = (os.platform == 'win32') ? 'C:/' : '/';
         const ROOT = '/';
         $(function() {
             // Initialize Fancytree
@@ -202,7 +219,7 @@
                     var dfd = $.Deferred(),
                         fs = require('fs'),
                         path = require('path'),
-                        nodepath = NodePath(data.node),
+                        nodepath = data.node.key; //NodePath(data.node),
                         nodes = [];
 
                     data.result = dfd.promise(); // Use a promise so we can use readdir asynchronously
@@ -246,7 +263,8 @@
                                 "title": file,
                                 "expanded": false,
                                 "folder": true,
-                                "lazy": true
+                                "lazy": true,
+                                "key": path.join(nodepath, file)
                             });
                         });
                         //console.log(nodes);
@@ -274,13 +292,16 @@
                     $('#innertube').children().remove();
                 },
                 activate: function(e, data) {
-                    console.log(NodePath(data.node));
-                    LoadCovers(NodePath(data.node));
+                    console.log(data);
+                    var p = data.node.key; // NodePath(data.node);
+                    SetWallpaper(p);
+                    LoadCovers(p);
                 }
             });
 
         });
 
+        // TODO: Change this to use .key
         function NodePath(node) {
             // Build a node path from getting its parents
             var nodepath = '',
@@ -304,28 +325,69 @@
          */
         function GetDir(p) {
             var fs = require('fs'),
-                path = require('path');
+                path = require('path'),
+                os = require('os');
 
             let nodes = [];
-            var files = fs.readdirSync(p);
-            //console.log(files);
-            for (i = 0; i < files.length; i++) {
-                try {
-                    if (!fs.statSync(path.join(p, files[i])).isFile()) {
-                        //console.log({"title": file, "expanded": false, "folder": true, "lazy": true});
-                        nodes.push({
-                            "title": files[i],
-                            "expanded": false,
-                            "folder": true,
-                            "lazy": true
-                        });
-                    } else {
-                        /* In this instance we only want folders */
-                        //nodes.push({"title": files[i]});
-                    }
-                } catch (err) {}
+
+            // Fetch the root directory OR drive letters if on Windows
+            if (p == ROOT && os.platform() == 'win32') {
+                var drives = GetWindowsDrives();
+                console.log(drives);
+                for (i = 0; i < drives.length; i++) {
+                    nodes.push({
+                        "title": drives[i],
+                        "expanded": false,
+                        "folder": true,
+                        "lazy": true,
+                        "key": drives[i]
+                    });
+                }
+            } else {
+                var files = fs.readdirSync(p);
+                //console.log(files);
+                for (i = 0; i < files.length; i++) {
+                    try {
+                        if (!fs.statSync(path.join(p, files[i])).isFile()) {
+                            //console.log({"title": file, "expanded": false, "folder": true, "lazy": true});
+                            nodes.push({
+                                "title": files[i],
+                                "expanded": false,
+                                "folder": true,
+                                "lazy": true,
+                                "key": path.join(p, files[i])
+                            });
+                        } else {
+                            /* In this instance we only want folders */
+                            //nodes.push({"title": files[i]});
+                        }
+                    } catch (err) {}
+                }
             }
             return nodes;
+        }
+
+        /**
+         * If we're running on Windows we'll need to start by getting the drive letters
+         * For this we'll have to call out a child process exec
+         *
+         * @return array drives
+         */
+        function GetWindowsDrives() {
+            const os = require('os'),
+                childProcess = require('child_process'),
+                tableParser = require('table-parser');
+
+            var drives = [];
+            if (os.platform() == 'win32') {
+                const stdout = childProcess.execSync('wmic logicaldisk get caption');
+                //console.log(stdout);
+                drives = tableParser.parse(stdout.toString()).map((caption) => {
+                    console.log(caption.Caption[0]);
+                    return caption.Caption[0];
+                });
+            }
+            return drives;
         }
 
         const events = require('events');
@@ -341,7 +403,7 @@
             //     '<div class="poster" data-id="' + arg[1] + '" id="-' + id + '"><div class="img"><img class="cover" id="' + arg[1] +'" src="' + arg[0].toDataURL() +'"><p class="caption">' + arg[1] + '</p></div>'
             // );
             $innertube.append(
-                '<div class="poster" data-id="' + path.basename(arg[0]) + '" id="' + id + '""><div class="img"><img class="cover" id="' + path.basename(arg[1]) + '" src="' + escape(arg[1]) +
+                '<div class="poster" data-id="' + path.basename(arg[0]) + '" id="' + id + '""><div class="img"><img class="cover" id="' + path.basename(arg[1]) + '" src="' + arg[1] +
                 '"><p class="caption">' + path.basename(arg[0], path.extname(arg[1])) + '</p></div>'
             );
             tinysort($('div.poster'), {
@@ -358,6 +420,33 @@
             revert: true
         });
 
+        // TODO: Figure out how to use drive letters
+        function SetWallpaper(p) {
+            const fs = require('fs'),
+                path = require('path');
+
+            var wallpapers = ['folder.jpg', 'folder.png'];
+            for (var i = 0; i < wallpapers.length; i++) {
+                var file = path.join(p, wallpapers[i]);
+                // console.log(file);
+                try {
+                    fs.accessSync(file); // This will throw an error if it doesn't exist
+                    // console.log('here!', $('main').css('background-image'));
+                    // console.log(file.replace(/\\/g,'/'));
+                    // const {nativeImage} = require('electron');
+                    // var backgroundImage = nativeImage.createFromPath(file);
+                    // $('main').css('background-image', backgroundImage.toDataURL());
+                    $('#wallpaper').css('background-image', 'url("file:///' + file.replace(/\\/g,'/') + '")');
+                    //$('main').css('background-image', 'url("file:///c:/mnt/media/comics/archive/Dark Horse/BPRD/folder.jpg")');
+                    //console.log($('main').css('background-image'));
+                    break; // OK we found one let's stop looking for more
+                } catch (err) {
+                    $('#wallpaper').css('background-image', 'none');
+                    console.error(err);
+                }
+            }
+        }
+
         /**
          * Load the cover images from the specified path
          *
@@ -373,7 +462,7 @@
                     if (err) {
                         console.error(err);
                     } else {
-                        data.forEach(function(file) {
+                        data.sort().forEach(function(file) {
                             switch (path.extname(file)) {
                                 case '.cbr':
                                 case '.cbz':
@@ -399,39 +488,37 @@
          *
          * @return emits a 'cover' event with a nativeImage and path to the cover
          */
-        function GetCover(file) {
+        function GetCover(cbrFile) {
             var fs = require('fs'),
                 path = require('path'),
                 crypto = require('crypto'),
-                filehash = crypto.createHash('md5').update(path.basename(file)).digest('hex'),
+                filehash = crypto.createHash('md5').update(path.basename(cbrFile)).digest('hex'),
                 nativeImage = require('electron').nativeImage;
 
             var coverImg = nativeImage.createFromPath(path.join(__dirname, 'covercache', filehash.substring(0, 2), filehash + ".png"));
             if (!coverImg.isEmpty()) {
-                eventEmitter.emit('cover', [file, path.join('covercache', filehash.substring(0, 2), filehash + ".png")]); // Trigger the cover event
-                //console.log('cached image ' + file)
+                eventEmitter.emit('cover', [cbrFile, path.join('covercache', filehash.substring(0, 2), filehash + ".png")]); // Trigger the cover event
+                //console.log('cached image ' + cbrFile)
             } else {
-                var path = require('path');
-
-                switch (path.extname(file)) {
+                switch (path.extname(cbrFile)) {
                     case '.cbz':
                         //case '.zip':
                     case '.cbr':
                     case '.cb7':
                         //case '.rar':
-                        var n7z = require('node-7z'),
-                            files = [], // The array of compressed files
+                        var n7z = require('node-7z'), // WARNING: Node7z requires "Extracting  " message in stdout use 7za renamed 7z from v^9.38 - NOT v^15.
+                            imageFiles = [], // The array of compressed files
                             cbr = new n7z();
 
-                        cbr.list(file) // First lets get the first image file from the compressed file
-                            .progress(function(zfiles) {
-                                zfiles.forEach(function(zfile) { // Populate the array of compressed files
-                                    if (path.extname(zfile.name) != '' && '.jpg.jpeg.gif.png'.indexOf(path.extname(zfile.name)) != -1) {
-                                        files.push(zfile.name);
+                        cbr.list(cbrFile) // First lets get the first image file from the compressed file
+                            .progress(function(compressedFiles) {
+                                compressedFiles.forEach(function(compressedFile) { // Populate the array of compressed files
+                                    if (path.extname(compressedFile.name) != '' && '.jpg.jpeg.gif.png'.indexOf(path.extname(compressedFile.name)) != -1) {
+                                        imageFiles.push(compressedFile.name);
                                     }
                                 });
                             })
-                            .then(function(spec) { // Now we have finished the list extract the files
+                            .then(function(spec) { // Now we have finished the list extract the imageFiles
                                 var tmp = require('tmp'); // Create a unique temp dir because we don't want clashing async filenames
                                 tmpDir = tmp.dir({
                                     prefix: 'tmp_',
@@ -439,40 +526,59 @@
                                     unsafeCleanup: true
                                 }, function _tempDirCreated(err, tmpPath, cleanupCallback) {
                                     if (err) throw err;
-                                    // console.log(file, files[0]);
-                                    if (files.length > 0) {
-
-                                        files.sort(); // Sort the file array as they may not be stored in order
-                                        cbr.extract(file, tmpPath, {
-                                                    wildcards: files[0]
+                                    if (imageFiles.length > 0) {
+                                        imageFiles.sort(); // Sort the file array as they may not be stored in order
+                                        //console.log(cbrFile, imageFiles);
+                                        var extractedFiles = [];
+                                        cbr.extract(cbrFile, tmpPath, {
+                                                    wildcards: imageFiles[0]
                                                 } // we only want the first file
                                             )
-                                            .progress(function(extractedFiles) {
-                                                console.log(extractedFiles[0]);
+                                            .progress((files) => {
+                                                extractedFiles = extractedFiles.concat(files);
+                                            })
+                                            .then(() => {
                                                 try {
-                                                    if (extractedFiles[0].substr(-18) == 'Unsupported Method') {
-                                                        eventEmitter.emit('cover', [file, path.join('images', "nocover.png")]); // Trigger the cover event
+                                                    // Use createFromPath as it's synchronous if we use an async read like readFile we move out of the thread and all
+                                                    // kinds of weird stuff happens as variables get updated by other async processes
+                                                    var coverImg = nativeImage.createFromPath(path.join(tmpPath, extractedFiles[0].replace('\r', ''))), // Load the image
+                                                        buffer = coverImg.resize({
+                                                            height: 240
+                                                        }); //.crop({width: 160});
+                                                    //console.log('here!', cbrFile, path.join(tmpPath, extractedFiles[0].replace('\r', '')), coverImg.isEmpty(), buffer.isEmpty());
+                                                    if (buffer.isEmpty()) { // TODO: Something not right here... animated gif?
+                                                        eventEmitter.emit('cover', [cbrFile, path.join('images', 'nocover.png')]); // Trigger the cover event
                                                     } else {
-                                                        var coverImg = nativeImage.createFromPath(path.join(tmpPath, extractedFiles[0])), // Load the image
-                                                            buffer = coverImg.resize({
-                                                                height: 240
-                                                            }); //.crop({width: 160});
-                                                        if (buffer.isEmpty()) { // TODO: Something not right here... animated gif?
-                                                            eventEmitter.emit('cover', [file, path.join('images', "nocover.png")]); // Trigger the cover event
-                                                        } else {
-                                                            CacheImage(file, buffer);
-                                                        }
+                                                        //console.log('Caching', cbrFile);
+                                                        var mkdirp = require('mkdirp');
+
+                                                        mkdirp(path.join(__dirname, 'covercache', filehash.substring(0, 2)), function(err) {
+                                                            if (err) {
+                                                                console.error(err);
+                                                            } else {
+                                                                // Save the buffer to a file as a png (.toPng) format
+                                                                var png = buffer.toPng();
+                                                                fs.writeFile(path.join(__dirname, 'covercache', filehash.substring(0, 2), filehash + '.png'), png,
+                                                                    (err) => {
+                                                                        if (err) {
+                                                                            console.error(err);
+                                                                        } else {
+                                                                            eventEmitter.emit('cover', [cbrFile, path.join('covercache', filehash.substring(0, 2), filehash) + '.png']); // Trigger the cover event
+                                                                        }
+                                                                    }
+                                                                )
+                                                            }
+                                                        });
                                                     }
                                                 } catch (err) {
                                                     console.error(err);
-                                                    eventEmitter.emit('cover', [file, path.join('images', "nocover.png")]); // Trigger the cover event
+                                                    eventEmitter.emit('cover', [cbrFile, path.join('images', 'nocover.png')]); // Trigger the cover event
+                                                } finally {
+                                                    cleanupCallback();
                                                 }
-                                            })
-                                            .catch(function(err) {
-                                                console.error(err);
                                             });
                                     } else {
-                                        eventEmitter.emit('cover', [file, path.join('images', "nocover.png")]); // Trigger the cover event
+                                        eventEmitter.emit('cover', [cbrFile, path.join('images', 'nocover.png')]); // Trigger the cover event
                                     }
                                 });
                             })
@@ -502,7 +608,7 @@
                             if (err) {
                                 console.error(err);
                             } else {
-                                //cleanupCallback(); // Now the files writted cleanup the temp dir
+                                cleanupCallback(); // Now the files written cleanup the temp dir
                                 //console.log('non-cached image ' + file)
                                 eventEmitter.emit('cover', [file, path.join('covercache', filehash.substring(0, 2), filehash) + '.png']); // Trigger the cover event
                             }
@@ -512,7 +618,9 @@
             });
         }
 
-        const {ipcRenderer} = require('electron');
+        const {
+            ipcRenderer
+        } = require('electron');
 
         function LaunchReaderIpc(cbr) {
             ipcRenderer.send('LaunchReader', cbr);
@@ -527,8 +635,8 @@
             let reader = window.open('readerOwl.html', {
                 parent: require('electron').remote.getCurrentWindow().id,
                 show: true
-                //width: cfg.get('reader').width,
-                //height: cfg.get('reader').height
+                    //width: cfg.get('reader').width,
+                    //height: cfg.get('reader').height
             }).focus();
             //console.log(reader);
 

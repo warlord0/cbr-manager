@@ -52,9 +52,9 @@ function createWindow() {
     if (cfg.get('browser').maximize) win.maximize();
 
     // Open the DevTools.
-    // win.webContents.openDevTools({
-    //     detach: true
-    // });
+    win.webContents.openDevTools({
+        detach: true
+    });
 
     win.on('close', () => {
         // Save settings

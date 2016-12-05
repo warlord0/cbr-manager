@@ -165,7 +165,7 @@
                 path = require('path');
             var files = [];
 
-            fs.readdir(path.join(__dirname, p), (err, data) => {
+            fs.readdir(p, (err, data) => {
                 if (err) {
                     console.error(err);
                 }
@@ -197,7 +197,7 @@
                 sizeOf = require('image-size'); // Faster than nativeImage ?
 
             try {
-                var dimensions = sizeOf(path.join(__dirname, file)),
+                var dimensions = sizeOf(file),
                     ratio = dimensions.width / dimensions.height,
                     $pages = $('div#pages'),
                     $thumbs = $('div.owl-thumbs');
@@ -249,7 +249,7 @@
 
         $(document).ready(function() {
 
-            LoadPages('images');
+            LoadPages('C:/mnt/media/temp/cal/test');
 
             $(window).unload((e) => {
                 // // Save settings

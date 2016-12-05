@@ -16,3 +16,11 @@ Page navigation is done using the mouse on the directional arrow buttons, using 
 ## Requirements
 
 7-zip v9.XX installed in your path as it must call the executable 7z (7z.exe in Windows) to extract CBR/CBZ/CB7 files for reading.
+
+## Screen Shots
+
+### Main Browser Window
+![Main Browser Window](docs/images/cbr-manager01.png)
+
+### Comic Book Reader with Thumb Navigation open
+![Comic Book Reader](docs/images/cbr-manager02.png)
