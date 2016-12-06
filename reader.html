@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Comic Book Reader</title>
+
+    <!-- Bootstrap -->
+    <link href="css/styles.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/owl.carousel.min.css" />
+    <link rel="stylesheet" href="css/owl.theme.default.min.css" />
+    <style type="text/css">
+        html,
+        body {
+            background-color: black;
+        }
+
+        #navleft,
+        #navright {
+            position: fixed;
+            top: 50%;
+            z-index: 1000;
+            opacity: 0.67;
+            margin-top: -17px;
+            /* Based on the button being 34px high */
+        }
+
+        #navleft:hover,
+        #navright:hover {
+            opacity: 1.0;
+        }
+
+        #navleft {
+            left: 5px;
+        }
+
+        #navright {
+            right: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <div id="pages" class="owl-carousel owl-theme">
+        </div>
+    </main>
+
+    <nav>
+    </nav>
+
+    <!-- Insert this line above script imports  -->
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+    </script>
+
+    <script src="js/all.js"></script>
+    <script src="js/owl.carousel.min.js"></script>
+    <script src="js/jquery.mousewheel.js"></script>
+
+    <script>
+        var pageCount = 0;
+
+        function LoadPages(p) {
+            const fs = require('fs'),
+                path = require('path');
+            var files = [];
+
+            fs.readdir(path.join(__dirname, p), (err, data) => {
+                if (err) {
+                    console.error(err);
+                }
+                data.forEach(function(file) {
+                    switch (path.extname(file)) {
+                        case ".png":
+                        case ".jpg":
+                        case ".jpeg":
+                        case ".gif":
+                            pageCount++;
+                            GetPage(path.join(p, file));
+                            break;
+                    }
+                });
+                eventEmitter.emit('loaded');
+            });
+        }
+
+        function GetPage(file) {
+            var fs = require('fs'),
+                path = require('path'),
+                //nativeImage = require('electron').nativeImage,
+                //pageImg = nativeImage.createFromPath(path.join(__dirname, file)),
+                //ratio = pageImg.getAspectRatio();
+                sizeOf = require('image-size'); // Faster than nativeImage ?
+
+            try {
+                var dimensions = sizeOf(path.join(__dirname, file)),
+                    ratio = dimensions.width / dimensions.height,
+                    $pages = $('div#pages');
+
+                $pages.append(
+                    '<img data-merge="' + ((ratio < 1) ? 1 : 2) + '" class="owl-lazy" data-src="' + file + '">'
+                );
+            } catch (err) {
+                console.error(err);
+            }
+
+        }
+
+        $(document).ready(function() {
+            LoadPages('images');
+        });
+
+        const events = require('events');
+        const eventEmitter = new events.EventEmitter();
+
+        eventEmitter.on('loaded', () => {
+            var owl = $('.owl-carousel').owlCarousel({
+                nav: true,
+                navContainer: 'nav',
+                navText: [
+                    '<button class="btn btn-primary" id="navleft"><i class="fa fa-chevron-left"></i></button>',
+                    '<button class="btn btn-primary" id="navright"><i class="fa fa-chevron-right"></i></button>'
+                ],
+                dots: false,
+                lazyLoad: true,
+                merge: true,
+                responsiveClass: true,
+                responsive: {
+                    0: {
+                        items: 1,
+                        mergeFit: false
+                    },
+                    1024: {
+                        items: 2,
+                        mergeFit: true
+                    },
+                    1440: {
+                        items: 3,
+                        mergeFit: true
+                    }
+                }
+            });
+
+            // Use the mousewheel - down = scroll forward, up = backwards
+            owl.on('mousewheel', '.owl-stage', function(e) {
+                if (e.deltaY > 0) {
+                    owl.trigger('prev.owl');
+                } else {
+                    owl.trigger('next.owl');
+                }
+                e.preventDefault();
+            });
+
+            $(document).keydown(function(e) {
+                console.log(pageCount, e);
+                if (e.key == "PageDown" || e.key == "ArrowRight" || e.keyCode == 32) {
+                    e.preventDefault();
+                    owl.trigger('next.owl');
+                } else if (e.key == "PageUp" || e.key == "ArrowLeft") {
+                    e.preventDefault();
+                    owl.trigger('prev.owl');
+                } else if (e.key == "Home") {
+                    e.preventDefault();
+                    owl.trigger('to.owl', 0);
+                } else if (e.key == "End") {
+                    e.preventDefault();
+                    owl.trigger('to.owl', pageCount);
+                }
+            });
+            // $('#navleft').on('click', function() {
+            //     owl.trigger('prev.owl.carousel');
+            // });
+            // $('#navright').on('click', function() {
+            //     owl.trigger('next.owl.carousel');
+            // });
+        });
+    </script>
+    <!-- Insert this line after script imports -->
+    <script>
+        if (window.module) module = window.module;
+    </script>
+
+</body>
+
+</html>

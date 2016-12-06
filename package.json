@@ -1,0 +1,46 @@
+{
+  "name": "cbr-manager",
+  "version": "0.1.0",
+  "description": "JQuery UI Tree",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "package": "electron-packager C:/mnt/data/electron/CBR cbr-manager --out c:/mnt/data/temp --platform win32 --arch x64,ia32 --icon \"app/superhero.ico\""
+  },
+  "keywords": [
+    "Tree",
+    "test"
+  ],
+  "author": "warlord0",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^1.4.7",
+    "electron-packager": "^8.3.0",
+    "gulp": "^3.9.1",
+    "gulp-clean-css": "^2.0.13",
+    "gulp-concat": "^2.6.1",
+    "gulp-jshint": "^2.0.4",
+    "gulp-less": "^3.3.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-sass": "^2.3.2",
+    "gulp-uglify": "^2.0.0",
+    "hover.css": "^2.0.2"
+  },
+  "dependencies": {
+    "bootstrap": "^3.3.7",
+    "configstore": "^2.1.0",
+    "font-awesome": "^4.7.0",
+    "jquery": "^1.12.4",
+    "jquery-mousewheel": "^3.1.13",
+    "jquery.fancytree": "^2.20.0",
+    "jqueryui": "^1.11.1",
+    "jshint": "^2.9.4",
+    "lazysizes": "^3.0.0-rc2",
+    "node-7z": "^0.4.0",
+    "owl.carousel": "^2.2.0",
+    "owl.carousel2.thumbs": "^0.1.8",
+    "table-parser": "^0.1.3",
+    "tinysort": "^2.3.6"
+  }
+}
