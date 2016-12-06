@@ -52,9 +52,9 @@ function createWindow() {
     if (cfg.get('browser').maximize) win.maximize();
 
     // Open the DevTools.
-    win.webContents.openDevTools({
-        detach: true
-    });
+    // win.webContents.openDevTools({
+    //     detach: true
+    // });
 
     win.on('close', () => {
         // Save settings
@@ -109,11 +109,12 @@ const {
     ipcMain
 } = require('electron');
 
-ipcMain.on('LaunchReader', (args) => {
+// args is a full path of cbr File
+ipcMain.on('LaunchReader', (e, args) => {
     LaunchReader(args);
 });
 
-function LaunchReader() {
+function LaunchReader(args) {
     if (reader === null) {
         reader = new BrowserWindow({
             width: cfg.get('reader').width,
@@ -138,9 +139,12 @@ function LaunchReader() {
     if (cfg.get('reader').maximize) reader.maximize();
 
     // Open the DevTools.
-    reader.webContents.openDevTools({
-        detach: true
-    });
+    // reader.webContents.openDevTools({
+    //     detach: true
+    // });
+
+    // Tell the BrowserWindow to open the cbr file
+    reader.webContents.executeJavaScript("LoadPages('" + args + "');");
 
     reader.on('close', () => {
         // Save settings

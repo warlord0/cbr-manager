@@ -156,32 +156,49 @@
          * Scan for images and call GetPages() to load them in the html
          * Triggers the eventEmmitter 'loaded' when complete
          *
-         * @params string p folder containing images
-         *
-         * @returns void()
+         * @params string p = folder containing images
          */
-        function LoadPages(p) {
+        function LoadPages(cbrFile) {
             const fs = require('fs'),
-                path = require('path');
+                path = require('path'),
+                tmp = require('tmp'),
+                n7z = require('node-7z');
             var files = [];
 
-            fs.readdir(p, (err, data) => {
+            tmp.dir({
+                    prefix: 'tmp_',
+                    unsafeCleanup: true
+                }, function _tempDirCreated(err, tmpPath, cleanupCallback) {
                 if (err) {
                     console.error(err);
+                } else {
+                    var cbr = new n7z();
+                    cbr.extract(cbrFile, tmpPath)
+                        .then(() => {
+                            fs.readdir(tmpPath, (err, data) => {
+                                if (err) {
+                                    console.error(err);
+                                }
+                                data.forEach(function(file) {
+                                    switch (path.extname(file)) {
+                                        case ".png":
+                                        case ".jpg":
+                                        case ".jpeg":
+                                        case ".gif":
+                                            pageCount++;
+                                            GetPage(path.join(tmpPath, file));
+                                            break;
+                                    }
+                                });
+                                eventEmitter.emit('loaded');
+                            });
+                        });
+                    $(window).on('unload', () => {
+                        cleanupCallback();
+                    })
                 }
-                data.forEach(function(file) {
-                    switch (path.extname(file)) {
-                        case ".png":
-                        case ".jpg":
-                        case ".jpeg":
-                        case ".gif":
-                            pageCount++;
-                            GetPage(path.join(p, file));
-                            break;
-                    }
-                });
-                eventEmitter.emit('loaded');
             });
+
         }
 
         /**
@@ -229,44 +246,7 @@
         const {BrowserWindow, remote} = require('electron');
         var reader = remote.getCurrentWindow();
 
-        /*
-        // Reset window as per last session
-        if (cfg.get('reader').maximize == true) {
-            reader.maximize();
-        } else {
-            reader.setSize(
-                    cfg.get('reader').width,
-                    cfg.get('reader').height,
-                    false
-                );
-            reader.setPosition(
-                    cfg.get('reader').x,
-                    cfg.get('reader').y,
-                    false
-                );
-        }
-        */
-
         $(document).ready(function() {
-
-            LoadPages('C:/mnt/media/temp/cal/test');
-
-            $(window).unload((e) => {
-                // // Save settings
-                // if (!reader.isMaximized() && !reader.isMinimized()) {
-                //     cfg.set('reader', {
-                //         width: reader.getSize()[0],
-                //         height: reader.getSize()[1],
-                //         x: reader.getPosition()[0],
-                //         y: reader.getPosition()[1]
-                //     });
-                // } else if (reader.isMaximized()) {
-                //     cfg.set('reader', {
-                //         maximize: true
-                //     });
-                // }
-
-            })
         });
 
         // Event for handling when the owl carousel is populated and  ready

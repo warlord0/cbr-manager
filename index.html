@@ -53,22 +53,19 @@
             right: 0;
             bottom: 0;
             overflow: auto;
-            background-image: url(images/superhero-icon.png);
-            background-repeat: no-repeat;
-            background-position: center center;
         }
 
         #wallpaper {
             content: "";
             top:  0;
-            left: 0;
+            left: 230px;
             bottom: 0;
             right: 0;
-            background-repeat: repeat-x;
+            background-image: url(images/superhero-icon.png);
+            background-repeat: no-repeat;
             background-position: center center;
-            background-size: 100% auto;
             z-index: -1;
-            opacity: 0.33;
+            opacity: 1.0;
             position: fixed;
         }
 
@@ -122,26 +119,44 @@
             color: silver;
         }
 
-        .cover {
+        .img {
             width: 160px;
-            height: 240px;
+            overflow: hidden; /* Trim any over width covers */
         }
-
-        .cover:hover {
-            -webkit-box-shadow: 0px 0px 15px 0px rgba(255, 255, 255, 1);
-            -moz-box-shadow: 0px 0px 15px 0px rgba(255, 255, 255, 1);
-            box-shadow: 0px 0px 15px 0px rgba(255, 255, 255, 1);
+        .cover {
+            zwidth: 160px;
+            height: 240px;
         }
 
         ul.fancytree-container {
             border: none;
         }
+
+        /* Grow */
+        .hvr-grow {
+          display: inline-block;
+          vertical-align: middle;
+          -webkit-transform: translateZ(0);
+          transform: translateZ(0);
+          box-shadow: 0 0 1px rgba(0, 0, 0, 0);
+          -webkit-backface-visibility: hidden;
+          backface-visibility: hidden;
+          -moz-osx-font-smoothing: grayscale;
+          -webkit-transition-duration: 0.3s;
+          transition-duration: 0.3s;
+          -webkit-transition-property: transform;
+          transition-property: transform;
+        }
+        .hvr-grow:hover, .hvr-grow:focus, .hvr-grow:active {
+          -webkit-transform: scale(1.1);
+          transform: scale(1.1);
+        }
     </style>
 </head>
 
 <body>
+    <div id="wallpaper"></div>
     <main>
-        <div id="wallpaper"></div>
         <div id="innertube">
         </div>
     </main>
@@ -186,8 +201,7 @@
         //         loading: "glyphicon glyphicon-refresh glyphicon-spin"
         //     }
         // };
-        // const os = require('os');
-        // const ROOT = (os.platform == 'win32') ? 'C:/' : '/';
+
         const ROOT = '/';
         $(function() {
             // Initialize Fancytree
@@ -208,9 +222,9 @@
                 //     }
                 // },
                 //glyph: glyph_opts,
-                selectMode: 2,
+                selectMode: 1,
 
-                source: function(event, data) {
+                source: (e, data) => {
                     var nodes = GetDir(ROOT);
                     //console.log(nodes);
                     return nodes;
@@ -219,37 +233,21 @@
                     var dfd = $.Deferred(),
                         fs = require('fs'),
                         path = require('path'),
-                        nodepath = data.node.key; //NodePath(data.node),
+                        nodepath = data.node.key;
                         nodes = [];
 
                     data.result = dfd.promise(); // Use a promise so we can use readdir asynchronously
 
-                    // // Build a node path from getting its parents
-                    // var node = data.node,
-                    //     nodes = [],
-                    //     nodepath = '',
-                    //     parent = node.getParent();
-                    //
-                    // while (parent) {
-                    //     //console.log(parent.title);
-                    //     if (parent.title != ROOT && parent.title != 'root') {
-                    //         nodepath = parent.title + "/" + nodepath;
-                    //         //console.log(nodepath);
-                    //     }
-                    //     parent = parent.getParent();
-                    // }
-                    // nodepath = ROOT + nodepath + node.title
-
-                    fs.readdir(nodepath, function(err, files) {
+                    fs.readdir(nodepath, (err, files) => {
                         if (err) {
                             // throw the error last so we can complete the promise
                             dfd.resolve([]);
                             console.error(err);
                         }
                         // .map an array so we can filter it
-                        files.map(function(file) {
+                        files.map((file) => {
                             return file;
-                        }).filter(function(file) {
+                        }).filter((file) => {
                             // Make sure it's a folder
                             try {
                                 return fs.statSync(path.join(nodepath, file)).isDirectory();
@@ -257,7 +255,7 @@
                                 console.error(err);
                                 return false;
                             }
-                        }).forEach(function(file) {
+                        }).forEach((file) => {
                             // Build array of node objects
                             nodes.push({
                                 "title": file,
@@ -283,37 +281,64 @@
                 //     iconSpacing: "0.5em", // Adjust this if @fancy-icon-spacing != "3px"
                 //     levelOfs: "1.5em" // Adjust this if ul padding != "16px"
                 // },
-                icon: function(event, data) {
+                icon: (e, data) => {
                     // if( data.node.isFolder() ) {
                     //   return "glyphicon glyphicon-book";
                     // }
                 },
-                beforeActivate: function(event, data) {
+                beforeActivate: (e, data) => {
                     $('#innertube').children().remove();
                 },
-                activate: function(e, data) {
-                    console.log(data);
-                    var p = data.node.key; // NodePath(data.node);
+                activate: (e, data) => {
+                    var p = data.node.key;
                     SetWallpaper(p);
                     LoadCovers(p);
+                },
+                init: (e, data) => {
+                    // Tree is loaded
+                    SelectNode('C:\\mnt\\media\\comics\\archive\\Dark Horse\\BPRD');
                 }
             });
 
         });
 
-        // TODO: Change this to use .key
-        function NodePath(node) {
-            // Build a node path from getting its parents
-            var nodepath = '',
-                parent = node.getParent();
+        /**
+         * Select and Activate a node in the tree.
+         * The node may be lazy laoaded so we need to expand it and ensure the lazy loads get laoaded
+         *
+         * @param string p - a unique node key (or file system path)
+         */
+        function SelectNode(p) {
+            const path = require('path'),
+                os = require('os');
 
-            while (parent) {
-                if (parent.title != ROOT && parent.title != 'root') {
-                    nodepath = parent.title + "/" + nodepath;
-                }
-                parent = parent.getParent();
+            var branches = p.split(path.sep);
+
+            if (os.platform() == 'win32') { // The drive letter needs a trailing \ added in Windows
+                branches[0] += path.sep;
             }
-            return ROOT + nodepath + node.title
+
+            var activeNode = $("#tree").fancytree("getTree").activateKey(branches.shift());
+            SelectChild(activeNode, branches);
+
+        }
+
+        /**
+         * Because .setExpanded is an async $.Promise we have to ask it to call the next child once it
+         * has populated the current node. So it must call itself until exhausted.
+         *
+         * @param FancyTreeNode activeNode the currently selected and active node
+         * @param [] branches the remainder, or relative path left to fetch
+         */
+        function SelectChild(activeNode, branches) {
+            activeNode.setExpanded(true)
+                .then(() => {
+                    if (activeNode = $("#tree").fancytree("getTree").activateKey(path.join(activeNode.key, branches.shift()))) {
+                        if (branches.length > 0) {
+                            SelectChild(activeNode, branches);
+                        }
+                    }
+                });
         }
 
         /**
@@ -336,11 +361,11 @@
                 console.log(drives);
                 for (i = 0; i < drives.length; i++) {
                     nodes.push({
-                        "title": drives[i],
+                        "title": drives[i] + path.sep,
                         "expanded": false,
                         "folder": true,
                         "lazy": true,
-                        "key": drives[i]
+                        "key": drives[i] + path.sep
                     });
                 }
             } else {
@@ -398,21 +423,16 @@
                 path = require('path'),
                 $innertube = $('div#innertube'),
                 id = 'id' + (new Date()).getTime();
-            /* Kinda cute way of doing it with dataurl, but just use src from the cover cache instead */
-            // $innertube.append(
-            //     '<div class="poster" data-id="' + arg[1] + '" id="-' + id + '"><div class="img"><img class="cover" id="' + arg[1] +'" src="' + arg[0].toDataURL() +'"><p class="caption">' + arg[1] + '</p></div>'
-            // );
+
             $innertube.append(
-                '<div class="poster" data-id="' + path.basename(arg[0]) + '" id="' + id + '""><div class="img"><img class="cover" id="' + path.basename(arg[1]) + '" src="' + arg[1] +
+                '<div class="poster hvr-grow" data-id="' + encodeURI(arg[0]) + '" id="' + id + '""><div class="img"><img class="cover" id="' + path.basename(arg[1]) + '" src="' + arg[1] +
                 '"><p class="caption">' + path.basename(arg[0], path.extname(arg[1])) + '</p></div>'
             );
             tinysort($('div.poster'), {
                 attr: 'id'
             }); // Sort the divs by their ID so the files appear in order
             $('#' + id).on('dblclick', function() { // Attache double click event
-                /* TODO: Should probaly launch the reader here */
-                console.log(this);
-                LaunchReaderIpc(this);
+                LaunchReaderIpc(decodeURI($(this).attr('data-id')).replace(/\\/g, '\/'));
             })
         });
 
@@ -420,29 +440,29 @@
             revert: true
         });
 
-        // TODO: Figure out how to use drive letters
+        /**
+         * Set the background-mage of the cover brwwser to either folder.jpg or folder.png if they exist in the chosen path
+         *
+         * @param string p = path of the wallpaper iamge to look for
+         */
         function SetWallpaper(p) {
             const fs = require('fs'),
                 path = require('path');
 
-            var wallpapers = ['folder.jpg', 'folder.png'];
+            var wallpapers = ['folder.jpg', 'folder.png']; // Look for these files
             for (var i = 0; i < wallpapers.length; i++) {
                 var file = path.join(p, wallpapers[i]);
-                // console.log(file);
                 try {
                     fs.accessSync(file); // This will throw an error if it doesn't exist
-                    // console.log('here!', $('main').css('background-image'));
-                    // console.log(file.replace(/\\/g,'/'));
-                    // const {nativeImage} = require('electron');
-                    // var backgroundImage = nativeImage.createFromPath(file);
-                    // $('main').css('background-image', backgroundImage.toDataURL());
-                    $('#wallpaper').css('background-image', 'url("file:///' + file.replace(/\\/g,'/') + '")');
-                    //$('main').css('background-image', 'url("file:///c:/mnt/media/comics/archive/Dark Horse/BPRD/folder.jpg")');
-                    //console.log($('main').css('background-image'));
+                    $('#wallpaper').css('background-image', 'url("file:///' + file.replace(/\\/g,'/') + '")')
+                        .css('background-size', '100% auto')
+                        .css('opacity', '0.33');
                     break; // OK we found one let's stop looking for more
                 } catch (err) {
-                    $('#wallpaper').css('background-image', 'none');
-                    console.error(err);
+                    $('#wallpaper').css('background-image', 'url(images/superhero-icon.png)')
+                        .css('background-size', 'auto')
+                        .css('opacity', '1.0'); // Set it to the defaul if nothing found
+                    //console.error(err); // No need to throw an erro we expected this
                 }
             }
         }
@@ -479,7 +499,6 @@
         }
 
         const path = require('path');
-        //LoadCovers(path.join(__dirname, 'zips')); // Load the covers for the zips path TODO: change to meaningful path
 
         /*
          * Get the specified cover from the file
@@ -522,7 +541,7 @@
                                 var tmp = require('tmp'); // Create a unique temp dir because we don't want clashing async filenames
                                 tmpDir = tmp.dir({
                                     prefix: 'tmp_',
-                                    //dir: path.join(__dirname, 'temp'),
+                                    //dir: path.join(__dirname, 'temp'), // Put them somewhere other than system temp
                                     unsafeCleanup: true
                                 }, function _tempDirCreated(err, tmpPath, cleanupCallback) {
                                     if (err) throw err;
@@ -544,7 +563,7 @@
                                                     var coverImg = nativeImage.createFromPath(path.join(tmpPath, extractedFiles[0].replace('\r', ''))), // Load the image
                                                         buffer = coverImg.resize({
                                                             height: 240
-                                                        }); //.crop({width: 160});
+                                                        });
                                                     //console.log('here!', cbrFile, path.join(tmpPath, extractedFiles[0].replace('\r', '')), coverImg.isEmpty(), buffer.isEmpty());
                                                     if (buffer.isEmpty()) { // TODO: Something not right here... animated gif?
                                                         eventEmitter.emit('cover', [cbrFile, path.join('images', 'nocover.png')]); // Trigger the cover event
@@ -618,29 +637,12 @@
             });
         }
 
-        const {
-            ipcRenderer
-        } = require('electron');
+        const {ipcRenderer} = require('electron');
 
         function LaunchReaderIpc(cbr) {
             ipcRenderer.send('LaunchReader', cbr);
         }
 
-        function LaunchReader(cbr) {
-            const pkg = require('./package.json'),
-                configstore = require('configstore'),
-                cfg = new configstore(pkg.name);
-
-            //console.log(self);
-            let reader = window.open('readerOwl.html', {
-                parent: require('electron').remote.getCurrentWindow().id,
-                show: true
-                    //width: cfg.get('reader').width,
-                    //height: cfg.get('reader').height
-            }).focus();
-            //console.log(reader);
-
-        }
     </script>
 
     <!-- Insert this line after script imports -->
