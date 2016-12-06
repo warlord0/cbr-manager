@@ -153,17 +153,17 @@
         var pageCount = 0; // TODO: Figure out why we can't get this fron the info: callback
 
         /**
+         * Extract images from cbr file into a temporary folder
          * Scan for images and call GetPages() to load them in the html
          * Triggers the eventEmmitter 'loaded' when complete
          *
-         * @params string p = folder containing images
+         * @params string cbrFile = comic book archive file
          */
         function LoadPages(cbrFile) {
             const fs = require('fs'),
                 path = require('path'),
                 tmp = require('tmp'),
                 n7z = require('node-7z');
-            var files = [];
 
             tmp.dir({
                     prefix: 'tmp_',
