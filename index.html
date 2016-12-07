@@ -363,7 +363,7 @@
             // Fetch the root directory OR drive letters if on Windows
             if (p == ROOT && os.platform() == 'win32') {
                 var drives = GetWindowsDrives();
-                console.log(drives);
+
                 for (i = 0; i < drives.length; i++) {
                     nodes.push({
                         "title": drives[i] + path.sep,
@@ -413,7 +413,6 @@
                 const stdout = childProcess.execSync('wmic logicaldisk get caption');
                 //console.log(stdout);
                 drives = tableParser.parse(stdout.toString()).map((caption) => {
-                    console.log(caption.Caption[0]);
                     return caption.Caption[0];
                 });
             }

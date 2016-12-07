@@ -137,6 +137,7 @@
 -->
 
     <script>
+        'use strict';
         global.jQuery = require('jquery/dist/jquery.min.js');
         global.$ = jQuery;
         var jQueryUI = require('jqueryui'),
@@ -162,37 +163,97 @@
         function LoadPages(cbrFile) {
             const fs = require('fs'),
                 path = require('path'),
-                tmp = require('tmp'),
-                n7z = require('node-7z');
+                tmp = require('tmp')
 
             tmp.dir({
-                    prefix: 'tmp_',
+                    prefix: 'cbr_',
                     unsafeCleanup: true
                 }, function _tempDirCreated(err, tmpPath, cleanupCallback) {
                 if (err) {
                     console.error(err);
                 } else {
-                    var cbr = new n7z();
-                    cbr.extract(cbrFile, tmpPath)
-                        .then(() => {
-                            fs.readdir(tmpPath, (err, data) => {
-                                if (err) {
-                                    console.error(err);
-                                }
-                                data.forEach(function(file) {
-                                    switch (path.extname(file)) {
-                                        case ".png":
-                                        case ".jpg":
-                                        case ".jpeg":
-                                        case ".gif":
-                                            pageCount++;
-                                            GetPage(path.join(tmpPath, file));
-                                            break;
+                    switch (path.extname(cbrFile)) {
+                        case '.cbz':
+                        case '.cb7':
+                            var n7z = require('node-7z'),
+                                cbr = new n7z();
+                            cbr.extract(cbrFile, tmpPath)
+                                .then(() => {
+                                    fs.readdir(tmpPath, (err, data) => {
+                                        if (err) {
+                                            console.error(err);
+                                        }
+                                        data.forEach(function(file) {
+                                            switch (path.extname(file)) {
+                                                case ".png":
+                                                case ".jpg":
+                                                case ".jpeg":
+                                                case ".gif":
+                                                    pageCount++;
+                                                    GetPage(path.join(tmpPath, file));
+                                                    break;
+                                            }
+                                        });
+                                        eventEmitter.emit('loaded');
+                                    });
+                                });
+                            break;
+                        case '.cbr':
+                            var unrar = require('unrar'),
+                                cbr = new unrar(cbrFile);
+
+                            cbr.list((err, entries) => {
+                                entries.sort((a, b) => {
+                                    if (path.basename(a.name) < path.basename(b.name)) {
+                                        return -1;
+                                    } else {
+                                        return 1;
                                     }
                                 });
-                                eventEmitter.emit('loaded');
+                                // console.log(entries);
+                                var active = 0; // Used to monitor open streams
+                                for (var i=0; i<entries.length; i++) {
+                                    // console.log(i, path.basename(entries[i].name));
+                                    var stream = cbr.stream(entries[i].name),
+                                        writeable = fs.createWriteStream(path.join(tmpPath, path.basename(entries[i].name)));
+                                    stream.on('error', (err) => {
+                                        console.error(err);
+                                    });
+                                    writeable.on('open', () => {
+                                        // console.log('writeable open');
+                                        active++;
+                                    })
+                                    writeable.on('close', () => {
+                                        // console.log('writeable close');
+                                        active--;
+                                        if (active == 0) { // If all streams are closed continue
+                                            // console.log('all done!');
+                                            fs.readdir(tmpPath, (err, files) => {
+                                                if (err) {
+                                                    console.error(err);
+                                                }
+                                                files.forEach((file) => {
+                                                    switch (path.extname(file)) {
+                                                        case ".png":
+                                                        case ".jpg":
+                                                        case ".jpeg":
+                                                        case ".gif":
+                                                            pageCount++;
+                                                            GetPage(path.join(tmpPath, file));
+                                                            break;
+                                                    }
+                                                });
+                                                eventEmitter.emit('loaded');
+                                            });
+                                        }
+                                    })
+                                    stream.pipe(writeable);
+                                }
+
                             });
-                        });
+
+                            break;
+                        }
                     $(window).on('unload', () => {
                         cleanupCallback();
                     })
@@ -280,12 +341,12 @@
                     1024: {
                         items: 2,
                         mergeFit: true,
-                        slideBy: 2
+                        slideBy: 1
                     },
                     1440: {
                         items: 3,
                         mergeFit: true,
-                        slideBy: 3
+                        slideBy: 1
                     }
                 }
                 // onLoadedLazy: function(e) {
