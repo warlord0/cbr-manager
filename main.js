@@ -1,6 +1,6 @@
 const {
     app,
-    BrowserWindow
+    BrowserWindow, Menu, MenuItem
 } = require('electron'),
     path = require('path'),
     url = require('url'),
@@ -25,8 +25,9 @@ const {
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let win;
-let reader = null;
+let win,
+    reader = null,
+    mainMenu;
 
 function createWindow() {
 
@@ -41,6 +42,9 @@ function createWindow() {
         icon: path.join(__dirname, 'superhero.ico')
     });
 
+    mainMenu = CreateMainMenu();
+
+    win.setMenu(mainMenu);
 
     // and load the index.html of the app.
     win.loadURL(url.format({
@@ -52,9 +56,9 @@ function createWindow() {
     if (cfg.get('browser').maximize) win.maximize();
 
     // Open the DevTools.
-    // win.webContents.openDevTools({
-    //     detach: true
-    // });
+    win.webContents.openDevTools({
+        detach: true
+    });
 
     win.on('close', () => {
         // Save settings
@@ -114,6 +118,16 @@ ipcMain.on('LaunchReader', (e, args) => {
     LaunchReader(args);
 });
 
+ipcMain.on('favouriteAddFolder', (e, args) => {
+    console.log(args);
+    var menuItem = new MenuItem({
+        label: path.basename(args),
+        position: 'after=favouriteFolders'
+    });
+    mainMenu.append(menuItem);
+    win.setMenu(mainMenu);
+});
+
 function LaunchReader(args) {
     if (reader === null) {
         reader = new BrowserWindow({
@@ -139,9 +153,9 @@ function LaunchReader(args) {
     if (cfg.get('reader').maximize) reader.maximize();
 
     // Open the DevTools.
-    // reader.webContents.openDevTools({
-    //     detach: true
-    // });
+    reader.webContents.openDevTools({
+        detach: true
+    });
 
     // Tell the BrowserWindow to open the cbr file
     reader.webContents.executeJavaScript("LoadPages('" + args + "');");
@@ -169,4 +183,69 @@ function LaunchReader(args) {
         reader = null
     });
 
+}
+
+function CreateMainMenu() {
+    const menuMain = [
+        {
+            label: 'Favourites',
+            //icon: 'images/star-o.ico',
+            submenu: [
+                {
+                    id: 'favouriteFiles',
+                    label: 'Favourite Files',
+                    submenu: [
+                        {
+                            label: 'Add File',
+                            //icon: 'images/plus.ico'
+                        },
+                        {
+                            role: 'separator',
+                            enabled: false
+                        }
+                        // ,
+                        // {
+                        //     label: 'File #1'
+                        // },
+                        // {
+                        //     label: 'File #2'
+                        // },
+                        // {
+                        //     label: 'File #3'
+                        // }
+                    ]
+                },
+                {
+                    label: 'Favourite Folders',
+                    submenu: [
+                        {
+                            label: 'Add Folder',
+                            //icon: 'images/plus.ico'
+                            click: (menuItem, browserWindow, event) => {
+                                win.webContents.executeJavaScript('favouriteAddFolder()');
+                            }
+                        },
+                        {
+                            id: 'favouriteFolders',
+                            role: 'separator',
+                            enabled: false
+                        }
+                        // ,
+                        // {
+                        //     label: 'Folder #1'
+                        // },
+                        // {
+                        //     label: 'Folder #2'
+                        // },
+                        // {
+                        //     label: 'Folder #3'
+                        // }
+                    ]
+                }
+            ]
+        }
+    ]
+
+    const menu = Menu.buildFromTemplate(menuMain);
+    return menu;
 }

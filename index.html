@@ -57,7 +57,7 @@
 
         #wallpaper {
             content: "";
-            top:  0;
+            top: 0;
             left: 230px;
             bottom: 0;
             right: 0;
@@ -121,8 +121,10 @@
 
         .img {
             width: 160px;
-            overflow: hidden; /* Trim any over width covers */
+            overflow: hidden;
+            /* Trim any over width covers */
         }
+
         .cover {
             zwidth: 160px;
             height: 240px;
@@ -131,25 +133,28 @@
         ul.fancytree-container {
             border: none;
         }
-
         /* Grow */
+
         .hvr-grow {
-          display: inline-block;
-          vertical-align: middle;
-          -webkit-transform: translateZ(0);
-          transform: translateZ(0);
-          box-shadow: 0 0 1px rgba(0, 0, 0, 0);
-          -webkit-backface-visibility: hidden;
-          backface-visibility: hidden;
-          -moz-osx-font-smoothing: grayscale;
-          -webkit-transition-duration: 0.3s;
-          transition-duration: 0.3s;
-          -webkit-transition-property: transform;
-          transition-property: transform;
+            display: inline-block;
+            vertical-align: middle;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            box-shadow: 0 0 1px rgba(0, 0, 0, 0);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            -moz-osx-font-smoothing: grayscale;
+            -webkit-transition-duration: 0.3s;
+            transition-duration: 0.3s;
+            -webkit-transition-property: transform;
+            transition-property: transform;
         }
-        .hvr-grow:hover, .hvr-grow:focus, .hvr-grow:active {
-          -webkit-transform: scale(1.1);
-          transform: scale(1.1);
+
+        .hvr-grow:hover,
+        .hvr-grow:focus,
+        .hvr-grow:active {
+            -webkit-transform: scale(1.1);
+            transform: scale(1.1);
         }
     </style>
 </head>
@@ -234,7 +239,7 @@
                         fs = require('fs'),
                         path = require('path'),
                         nodepath = data.node.key;
-                        nodes = [];
+                    nodes = [];
 
                     data.result = dfd.promise(); // Use a promise so we can use readdir asynchronously
 
@@ -296,7 +301,7 @@
                 },
                 init: (e, data) => {
                     // Tree is loaded
-                    //SelectNode('C:\\mnt\\media\\comics\\archive\\Dark Horse\\BPRD');
+                    SelectNode('C:\\mnt\\media\\incoming\\mirc'); //\\2016 Week 48');
                 }
             });
 
@@ -454,7 +459,7 @@
                 var file = path.join(p, wallpapers[i]);
                 try {
                     fs.accessSync(file); // This will throw an error if it doesn't exist
-                    $('#wallpaper').css('background-image', 'url("file:///' + file.replace(/\\/g,'/') + '")')
+                    $('#wallpaper').css('background-image', 'url("file:///' + file.replace(/\\/g, '/') + '")')
                         .css('background-size', '100% auto')
                         .css('opacity', '0.33');
                     break; // OK we found one let's stop looking for more
@@ -512,17 +517,61 @@
                 path = require('path'),
                 crypto = require('crypto'),
                 filehash = crypto.createHash('md5').update(path.basename(cbrFile)).digest('hex'),
-                nativeImage = require('electron').nativeImage;
+                nativeImage = require('electron').nativeImage
 
             var coverImg = nativeImage.createFromPath(path.join(__dirname, 'covercache', filehash.substring(0, 2), filehash + ".png"));
-            if (!coverImg.isEmpty()) {
+            if (!coverImg.isEmpty()) { // If we already have a cover in the cache use it
                 eventEmitter.emit('cover', [cbrFile, path.join('covercache', filehash.substring(0, 2), filehash + ".png")]); // Trigger the cover event
-                //console.log('cached image ' + cbrFile)
             } else {
                 switch (path.extname(cbrFile)) {
+                    /*
+                    Due to 7-zip limitation of only being able to use v9 as that's all that's available on Linux as p7zip-full we can't Handle
+                    newer RAR file formats as it fails. So we must resort to using the unrar program instead.
+                    */
+                    case '.cbr':
+                        var unrar = require('unrar'),
+                            fs = require('fs'),
+                            path = require('path'),
+                            cbr = new unrar(cbrFile);
+                        var tmp = require('tmp'); // Create a unique temp dir because we don't want clashing async filenames
+
+                        tmpDir = tmp.dir({
+                            prefix: 'cbr_',
+                            //dir: path.join(__dirname, 'temp'), // Put them somewhere other than system temp
+                            unsafeCleanup: true
+                        }, function _tempDirCreated(err, tmpPath, cleanupCallback) {
+
+                            cbr.list((err, entries) => {
+                                entries.sort((a, b) => { // Sort the entries by name
+                                    if (path.basename(a.name) < path.basename(b.name)) {
+                                        return -1;
+                                    } else {
+                                        return 1;
+                                    }
+                                });
+                                // Remove the non-images from the start of the array, if any.
+                                while (path.extname(entries[0].name) == '' || '.jpg.jpeg.gif.png'.indexOf(path.extname(entries[0].name)) == -1) {
+                                    entries.shift();
+                                }
+                                var stream = cbr.stream(entries[0].name);
+                                stream.on('error', (err) => {
+                                    //console.error(err);
+                                    throw err;
+                                });
+                                stream.on('end', () => { // This happens async so we can only offer an event trigger
+                                    makeCover(cbrFile, filehash, path.join(tmpPath, path.basename(entries[0].name)));
+                                });
+                                var writeable = require('fs').createWriteStream(path.join(tmpPath, path.basename(entries[0].name)))
+                                writeable.on('close', () => { // Ensure we tidy up after the file is closed
+                                    cleanupCallback();
+                                })
+                                stream.pipe(writeable);
+                            });
+
+                        });
+                        break;
                     case '.cbz':
                         //case '.zip':
-                    case '.cbr':
                     case '.cb7':
                         //case '.rar':
                         var n7z = require('node-7z'), // WARNING: Node7z requires "Extracting  " message in stdout use 7za renamed 7z from v^9.38 - NOT v^15.
@@ -531,70 +580,42 @@
 
                         cbr.list(cbrFile) // First lets get the first image file from the compressed file
                             .progress(function(compressedFiles) {
-                                compressedFiles.forEach(function(compressedFile) { // Populate the array of compressed files
-                                    if (path.extname(compressedFile.name) != '' && '.jpg.jpeg.gif.png'.indexOf(path.extname(compressedFile.name)) != -1) {
-                                        imageFiles.push(compressedFile.name);
-                                    }
-                                });
+                                imageFiles = imageFiles.concat(compressedFiles);
                             })
                             .then(function(spec) { // Now we have finished the list extract the imageFiles
                                 var tmp = require('tmp'); // Create a unique temp dir because we don't want clashing async filenames
                                 tmpDir = tmp.dir({
-                                    prefix: 'tmp_',
+                                    prefix: 'cbz_',
                                     //dir: path.join(__dirname, 'temp'), // Put them somewhere other than system temp
                                     unsafeCleanup: true
                                 }, function _tempDirCreated(err, tmpPath, cleanupCallback) {
                                     if (err) throw err;
                                     if (imageFiles.length > 0) {
-                                        imageFiles.sort(); // Sort the file array as they may not be stored in order
-                                        //console.log(cbrFile, imageFiles);
+                                        imageFiles.sort((a, b) => {
+                                            if (path.basename(a.name) < path.basename(b.name)) {
+                                                return -1;
+                                            } else {
+                                                return 1;
+                                            }
+                                        }); // Sort the file array as they may not be stored in order
+                                        while (path.extname(imageFiles[0].name) == '' || '.jpg.jpeg.gif.png'.indexOf(path.extname(imageFiles[0].name)) == -1) {
+                                            imageFiles.shift();
+                                        }
                                         var extractedFiles = [];
                                         cbr.extract(cbrFile, tmpPath, {
-                                                    wildcards: imageFiles[0]
+                                                    wildcards: imageFiles[0].name
                                                 } // we only want the first file
                                             )
                                             .progress((files) => {
                                                 extractedFiles = extractedFiles.concat(files);
                                             })
                                             .then(() => {
-                                                try {
-                                                    // Use createFromPath as it's synchronous if we use an async read like readFile we move out of the thread and all
-                                                    // kinds of weird stuff happens as variables get updated by other async processes
-                                                    var coverImg = nativeImage.createFromPath(path.join(tmpPath, extractedFiles[0].replace('\r', ''))), // Load the image
-                                                        buffer = coverImg.resize({
-                                                            height: 240
-                                                        });
-                                                    //console.log('here!', cbrFile, path.join(tmpPath, extractedFiles[0].replace('\r', '')), coverImg.isEmpty(), buffer.isEmpty());
-                                                    if (buffer.isEmpty()) { // TODO: Something not right here... animated gif?
-                                                        eventEmitter.emit('cover', [cbrFile, path.join('images', 'nocover.png')]); // Trigger the cover event
-                                                    } else {
-                                                        //console.log('Caching', cbrFile);
-                                                        var mkdirp = require('mkdirp');
-
-                                                        mkdirp(path.join(__dirname, 'covercache', filehash.substring(0, 2)), function(err) {
-                                                            if (err) {
-                                                                console.error(err);
-                                                            } else {
-                                                                // Save the buffer to a file as a png (.toPng) format
-                                                                var png = buffer.toPng();
-                                                                fs.writeFile(path.join(__dirname, 'covercache', filehash.substring(0, 2), filehash + '.png'), png,
-                                                                    (err) => {
-                                                                        if (err) {
-                                                                            console.error(err);
-                                                                        } else {
-                                                                            eventEmitter.emit('cover', [cbrFile, path.join('covercache', filehash.substring(0, 2), filehash) + '.png']); // Trigger the cover event
-                                                                        }
-                                                                    }
-                                                                )
-                                                            }
-                                                        });
-                                                    }
-                                                } catch (err) {
-                                                    console.error(err);
-                                                    eventEmitter.emit('cover', [cbrFile, path.join('images', 'nocover.png')]); // Trigger the cover event
-                                                } finally {
-                                                    cleanupCallback();
+                                                if (extractedFiles) {
+                                                    makeCover(cbrFile, filehash, path.join(tmpPath, path.basename(extractedFiles[0])).replace('\r', ''));
+                                                } else {
+                                                    console.error('Unable to extract files from ' + cbrFile);
                                                 }
+                                                cleanupCallback();
                                             });
                                     } else {
                                         eventEmitter.emit('cover', [cbrFile, path.join('images', 'nocover.png')]); // Trigger the cover event
@@ -602,13 +623,67 @@
                                 });
                             })
                             .catch(function(err) {
-                                console.error(err);
+                                console.error('Can\'t handle file ' + cbrFile);
+                                // Probably a RAR format not supported by 7-zip
+                                eventEmitter.emit('cover', [cbrFile, path.join('images', 'nocover.png')]); // Trigger the cover event
                             });
                         break;
                 }
             }
         }
 
+        /**
+         * Read the cover from the temporary file and create a resized version in the cover cache
+         * Once created trigger the 'cover' event sending details of the new cover
+         *
+         * @param string cbrFile = file name to be reported to the event
+         * @param string filehash = MD5 hash of the filename used to place the cover image in the cache
+         * @param string tmpFile = full path of the temporary image file to use as the cover
+         */
+        function makeCover(cbrFile, filehash, tmpFile) {
+            try {
+                // Use createFromPath as it's synchronous if we use an async read like readFile we move out of the thread and all
+                // kinds of weird stuff happens as variables get updated by other async processes
+                var nativeImage = require('electron').nativeImage,
+                    fs = require('fs'),
+                    coverImg = nativeImage.createFromPath(tmpFile), // Load the image
+                    buffer = coverImg.resize({
+                        height: 240
+                    });
+                //console.log('here!', cbrFile, path.join(tmpPath, extractedFiles[0].replace('\r', '')), coverImg.isEmpty(), buffer.isEmpty());
+                if (buffer.isEmpty()) { // TODO: Something not right here... animated gif?
+                    eventEmitter.emit('cover', [cbrFile, path.join('images', 'nocover.png')]); // Trigger the cover event
+                    //return path.join('images', 'nocover.png');
+                } else {
+                    //console.log('Caching', cbrFile);
+                    var mkdirp = require('mkdirp');
+
+                    mkdirp(path.join(__dirname, 'covercache', filehash.substring(0, 2)), function(err) {
+                        if (err) {
+                            console.error(err);
+                        } else {
+                            // Save the buffer to a file as a png (.toPng) format
+                            var png = buffer.toPng();
+                                fs.writeFile(path.join(__dirname, 'covercache', filehash.substring(0, 2), filehash + '.png'), png,
+                                (err) => {
+                                    if (err) {
+                                        console.error(err);
+                                    } else {
+                                        //return path.join('covercache', filehash.substring(0, 2), filehash) + '.png';
+                                        eventEmitter.emit('cover', [cbrFile, path.join('covercache', filehash.substring(0, 2), filehash) + '.png']); // Trigger the cover event
+                                    }
+                                }
+                            )
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+                eventEmitter.emit('cover', [cbrFile, path.join('images', 'nocover.png')]); // Trigger the cover event
+            }
+        }
+
+        /* NOT USED */
         function CacheImage(file, buffer) {
             // Create the folder if it doesn't exist
             var fs = require('fs'),
@@ -637,12 +712,21 @@
             });
         }
 
-        const {ipcRenderer} = require('electron');
+        const {
+            ipcRenderer
+        } = require('electron');
 
         function LaunchReaderIpc(cbr) {
             ipcRenderer.send('LaunchReader', cbr);
         }
 
+        function favouriteAddFolder() {
+            console.log($('#tree').fancytree('getTree').focusNode);
+            if ($('#tree').fancytree('getTree').focusNode) {
+                var node = $('#tree').fancytree('getTree').focusNode;
+                ipcRenderer.send('favouriteAddFolder', node.key);
+            }
+        }
     </script>
 
     <!-- Insert this line after script imports -->
