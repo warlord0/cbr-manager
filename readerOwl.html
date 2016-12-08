@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="node_modules/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="node_modules/owl.carousel/dist/assets/owl.carousel.min.css" />
     <link rel="stylesheet" href="node_modules/owl.carousel/dist/assets/owl.theme.default.min.css" />
+    <link rel="stylesheet" href="node_modules/jqueryui/jquery-ui.min.css">
     <!--
     <link href="css/styles.css" rel="stylesheet">
     <link rel="stylesheet" href="css/owl.carousel.min.css" />
@@ -98,6 +99,15 @@
             opacity: 0.33;
             margin-bottom: -12px;
         }
+
+        #progressbar {
+            position: fixed;
+            zdisplay: none;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            height: 25px;
+        }
     </style>
 </head>
 
@@ -105,6 +115,7 @@
     <main>
         <div id="pages" class="owl-carousel owl-theme" data-slider-id="1">
         </div>
+        <div id="progressbar"></div>
     </main>
 
     <nav>
@@ -179,11 +190,11 @@
                                 cbr = new n7z();
                             cbr.extract(cbrFile, tmpPath)
                                 .then(() => {
-                                    fs.readdir(tmpPath, (err, data) => {
+                                    fs.readdir(tmpPath, (err, files) => {
                                         if (err) {
                                             console.error(err);
                                         }
-                                        data.forEach(function(file) {
+                                        files.forEach(function(file, i) {
                                             switch (path.extname(file)) {
                                                 case ".png":
                                                 case ".jpg":
