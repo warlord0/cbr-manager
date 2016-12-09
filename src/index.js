@@ -1,3 +1,6 @@
+/*
+ This file isn't used it's here for reference only as pre-coffeescript
+*/
     // glyph_opts = {
     //     map: {
     //         doc: "glyphicon glyphicon-file",

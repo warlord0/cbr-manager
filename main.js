@@ -145,7 +145,7 @@ function LaunchReader(args) {
 
     // and load the index.html of the app.
     reader.loadURL(url.format({
-        pathname: path.join(__dirname, 'readerOwl.html'),
+        pathname: path.join(__dirname, 'reader.html'),
         protocol: 'file:',
         slashes: true
     }));
@@ -158,7 +158,7 @@ function LaunchReader(args) {
     });
 
     // Tell the BrowserWindow to open the cbr file
-    reader.webContents.executeJavaScript("LoadPages('" + args + "');");
+    reader.webContents.executeJavaScript("loadPages('" + args + "');");
 
     reader.on('close', () => {
         // Save settings

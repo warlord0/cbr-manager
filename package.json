@@ -38,7 +38,6 @@
     "jshint": "^2.9.4",
     "lazysizes": "^3.0.0-rc2",
     "node-7z": "^0.4.0",
-    "node-unrar": "^0.1.5",
     "owl.carousel": "^2.2.0",
     "owl.carousel2.thumbs": "^0.1.8",
     "table-parser": "^0.1.3",
