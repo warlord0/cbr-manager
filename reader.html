@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Comic Book Reader</title>
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="node_modules/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="node_modules/owl.carousel/dist/assets/owl.carousel.min.css" />
+    <link rel="stylesheet" href="node_modules/owl.carousel/dist/assets/owl.theme.default.min.css" />
+    <link rel="stylesheet" href="node_modules/jqueryui/jquery-ui.min.css">
+    <!--
+    <link href="css/styles.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/owl.carousel.min.css" />
+    <link rel="stylesheet" href="css/owl.theme.default.min.css" />
+-->
+    <style type="text/css">
+        html,
+        body {
+            background-color: black;
+        }
+
+        #navThumb {
+            position: fixed;
+            bottom: 5px;
+            right: 5px;
+            z-index: 1000;
+            opacity: 0.33;
+        }
+
+        #navThumb:hover {
+            opacity: 1.0;
+        }
+
+        #navleft,
+        #navright {
+            position: fixed;
+            top: 50%;
+            z-index: 1000;
+            opacity: 0.33;
+            margin-top: -17px;
+            /* Based on the button being 34px high */
+        }
+
+        #navleft:hover,
+        #navright:hover,
+        #navThumbLeft:hover,
+        #navThumbRight:hover {
+            opacity: 1.0;
+        }
+
+        #navleft,
+        #navThumbLeft {
+            left: 5px;
+        }
+
+        #navright,
+        #navThumbRight {
+            right: 5px;
+        }
+
+        .owl-thumbs {
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            bottom: 0;
+            height: 120px;
+            /* initial width */
+            width: 200%;
+            zdisplay: none;
+            background-color: #222;
+        }
+
+        #owl-thumb-nav {
+            display: none;
+        }
+
+        .owl-thumb-item img {
+            opacity: 0.67;
+            height: 120px;
+            width: auto;
+            float: left;
+        }
+
+        .owl-thumb-item img:hover {
+            opacity: 1.0;
+        }
+
+        #navThumbLeft,
+        #navThumbRight {
+            position: fixed;
+            bottom: 60px;
+            z-index: 1000;
+            opacity: 0.33;
+            margin-bottom: -12px;
+        }
+
+        #progressbar {
+            position: fixed;
+            zdisplay: none;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            height: 25px;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <div id="pages" class="owl-carousel owl-theme" data-slider-id="1">
+        </div>
+        <div id="progressbar"></div>
+    </main>
+
+    <nav>
+        <div id="owl-nav">
+            <button class="btn btn-sm btn-default" id="navThumb"><i class="fa fa-chevron-up"></i></button>
+        </div>
+        <div id="owl-thumb-nav">
+            <button class="btn btn-sm btn-default" id="navThumbLeft"><i class="fa fa-chevron-left"></i></button>
+            <button class="btn btn-sm btn-default" id="navThumbRight"><i class="fa fa-chevron-right"></i></button>
+            <div class="owl-thumbs" data-slider-id="1">
+            </div>
+        </div>
+
+    </nav>
+
+
+    <!-- Insert this line above script imports  -->
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+    </script>
+    <!--
+    <script src="js/all.js"></script>
+    <script src="js/owl.carousel.min.js"></script>
+    <script src="js/owl.carousel2.thumbs.min.js"></script>
+    <script src="js/jquery.mousewheel.js"></script>
+    <script src="node_modules/lazysizes/lazysizes.min.js" aync=""></script>
+-->
+
+    <script>
+        'use strict';
+        global.jQuery = require('jquery/dist/jquery.min.js');
+        global.$ = jQuery;
+        var jQueryUI = require('jqueryui'),
+            jQueryMousewheel = require('jquery-mousewheel/jquery.mousewheel.js')($), // jQuery plugin handling
+            bootstrap = require('bootstrap'),
+            owlCarousel = require('owl.carousel/dist/owl.carousel.min.js'),
+            owlCarouselThumbs = require('owl.carousel2.thumbs/dist/owl.carousel2.thumbs.min.js'),
+            lazysizes = require('lazysizes/lazysizes.min.js');
+    </script>
+
+    <script src="lib/reader.js"></script>
+    <!-- Insert this line after script imports -->
+    <script>
+        if (window.module) module = window.module;
+    </script>
+
+</body>
+
+</html>
