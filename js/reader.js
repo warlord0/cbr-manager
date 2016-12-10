@@ -73,20 +73,20 @@
                 stream.on('err', function() {
                   console.error(err);
                 });
-                writeable.on('open', function() {
+                writable.on('open', function() {
                   active++;
                 });
                 writable.on('close', function() {
                   active--;
                   if (active === 0) {
                     fs.readdir(tmpPath, function(err, files) {
-                      var j, len1;
+                      var file, j, len1;
                       if (err) {
                         console.error(err);
                       } else {
                         console.log(files);
                         for (j = 0, len1 = files.length; j < len1; j++) {
-                          files = files[j];
+                          file = files[j];
                           switch (path.extname(file)) {
                             case '.png':
                             case '.jpg':

@@ -237,9 +237,9 @@
               var stream, writable;
               entries.sort(function(a, b) {
                 if (path.basename(a.name) < path.basename(b.name)) {
-                  -1;
+                  return -1;
                 } else {
-                  1;
+                  return 1;
                 }
               });
               while (path.extname(entries[0].name) === '' || '.jpg.jpeg.gif.png'.indexOf(path.extname(entries[0].name)) === -1) {

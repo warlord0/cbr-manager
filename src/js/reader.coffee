@@ -56,7 +56,7 @@ window.loadPages = (cbrFile) -> # Needs to be a window. function or can't call i
                             stream.on 'err', ->
                                 console.error err
                                 return
-                            writeable.on 'open', ->
+                            writable.on 'open', ->
                                 active++
                                 return
                             writable.on 'close', ->
@@ -68,7 +68,7 @@ window.loadPages = (cbrFile) -> # Needs to be a window. function or can't call i
                                             return
                                         else
                                             console.log files
-                                            for files in files
+                                            for file in files
                                                 switch path.extname(file)
                                                     when '.png', '.jpg', '.jpeg', '.gif'
                                                         pageCount++

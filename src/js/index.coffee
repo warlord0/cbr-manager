@@ -250,7 +250,6 @@ getCover = (cbrFile) ->
                                 -1
                             else
                                 1
-                            return
                         # Strip any non-image files from the beginning of the array
                         while path.extname(entries[0].name) is '' or '.jpg.jpeg.gif.png'.indexOf(path.extname(entries[0].name)) is -1
                             entries.shift()
