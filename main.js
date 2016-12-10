@@ -42,7 +42,7 @@
       resizable: true,
       icon: './images/superhero.ico'
     });
-    if (cfg.get('browser').maximize) {
+    if (cfg.get('browser').maximize === true) {
       win.maximize();
     }
     win.loadURL(url.format({
@@ -87,6 +87,9 @@
         icon: './images/superhero.ico'
       });
     }
+    if (cfg.get('reader').maximize === true) {
+      reader.maximize();
+    }
     reader.loadURL(url.format({
       pathname: './reader.html',
       protocol: 'file:',
@@ -114,7 +117,7 @@
       }
     });
     reader.on('closed', function() {
-      win = null;
+      reader = null;
     });
   };
 
@@ -124,6 +127,10 @@
     if (win != null) {
       createWindow;
     }
+  });
+
+  app.on('windows-all-closed', function() {
+    app.quit();
   });
 
   ipcMain.on('LaunchReader', function(e, cbrFile) {

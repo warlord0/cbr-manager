@@ -95,23 +95,34 @@ getPage = (file) ->
       dimensions = sizeOf file
       ratio = dimensions.width / dimensions.height
       $pages = $ '#pages'
-      $thumbs = $ 'div.owl-thumbs'
+      $thumbs = $ '.owl-thumbs'
 
-      $pages.append '<img data-merge="' + ((ratio < 1) ? 1 : 2) + '" class="lazyload" data-src="' + file + '" alt="' + path.basename(file) + '">'
+      $pages.append '<img data-merge="' + (if ratio < 1 then 1 else  2) + '" class="lazyload" data-src="' + file + '" alt="' + path.basename(file) + '">'
       $thumbs.append '<div class="owl-thumb-item"><img src="' + file + '" alt="' + path.basename(file, path.extname(file)) + '"></div>'
     catch error
         console.error error
     return
 
 # Show/hide toggle the thumb navigation when the button is clicked
-$('#navThumb').on 'click', (e) ->
-    if $(this).children('i').first().hasClass('fs-chevron-up')
-        $(this).children('i').switchClass('fa-chevron-up', 'fa-chevron-down')
-    else
-        $(this).children('i').switchClass('fa-chevron-down', 'fa-chevron-up')
-    $('div#owl-thumb-nav').slideToggle
-        direction: 'down'
-    return
+# No longer used as it's moved to a CSS transition
+# $('#navThumb').on 'click', (e) ->
+#     toggleThumbnails()
+#     return
+
+# toggleThumbnails = ->
+#     if $('#navThumb').children('i').first().hasClass('fa-chevron-up')
+#         $('#navThumb').children('i').first().switchClass('fa-chevron-up', 'fa-chevron-down')
+#         $('.owl-thumbs,#navThumbLeft,#navThumbRight').css
+#             transition: '1s'
+#             transform: 'translateY(-240px)'
+#     else
+#         $('#navThumb').children('i').first().switchClass('fa-chevron-down', 'fa-chevron-up')
+#         $('.owl-thumbs,#navThumbLeft,#navThumbRight').css
+#             transition: '1s'
+#             transform: 'translateY(0px)'
+#     # $('#owl-thumb-nav').toggle 'clip',
+#     #     direction: 'down'
+#     return
 
 # For triggering an events once all pages are loaded
 events = require 'events'
@@ -163,9 +174,8 @@ thumbWidth = ->
         return
     if totalWidth < $(document).width()
         totalWidth = $(document).width()
-    #w = $('div.owl-thumbs').width()
-    if $('div.owl-thumbs').width() isnt totalWidth
-        $('div.owl-thumbs').width(totalWidth)
+    if $('.owl-thumbs').width() isnt totalWidth
+        $('.owl-thumbs').width(totalWidth)
     return totalWidth
 
 # Use some accessibility controls for keyboard
@@ -179,6 +189,8 @@ $(document) .on 'keydown', (e) ->
         owl.trigger 'to.owl', 0
     else if e.key is 'End'
         owl.trigger 'to.owl', pageCount
+    # else if e.key is 't' or e.key is 'T'
+    #     toggleThumbnails()
     else if e.key is 'x' or e.key is 'X'
         window.close()
     return
@@ -228,16 +240,12 @@ $('#navThumbLeft').on 'click', (e) ->
 ctxMenu = new Menu()
 
 makeContextMenu = -> # Create an array of menuItem objects that can build the menu
-    {nativeImage} = require 'electron'
-    icon = nativeImage.createFromPath('images/star.png')
-
     templateItems = [
             {
                 label: 'First Page'
                 accelerator: 'Home'
                 click: ->
                     owl.trigger 'to.owl', 0
-                # inco: icon                
             }
             {
                 label: 'Previous Page'
@@ -261,6 +269,16 @@ makeContextMenu = -> # Create an array of menuItem objects that can build the me
                 role: 'separator'
                 enabled: false
             }
+            # {
+            #     label: 'Toggle Thumbnails'
+            #     accelerator: 'T'
+            #     click: ->
+            #         toggleThumbnails()
+            # }
+            # {
+            #     role: 'separator'
+            #     enabled: false
+            # }
             {
                 label: 'Exit'
                 accelerator: 'X'

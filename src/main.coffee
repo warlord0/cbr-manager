@@ -33,7 +33,7 @@ createWindow = ->
         resizable: true
         icon: './images/superhero.ico'
 
-    if cfg.get('browser').maximize then win.maximize()
+    win.maximize() if cfg.get('browser').maximize is true
 
     win.loadURL url.format
         pathname: './index.html'
@@ -75,6 +75,8 @@ launchReader = (cbrFile) ->
             resizable: true
             icon: './images/superhero.ico'
 
+    reader.maximize() if cfg.get('reader').maximize is true
+
     reader.loadURL url.format
         pathname: './reader.html'
         protocol: 'file:'
@@ -98,7 +100,7 @@ launchReader = (cbrFile) ->
         return
 
     reader.on 'closed', ->
-        win = null
+        reader = null # Reset the window to null or the garbage collector destroys it
         return
 
     return
@@ -108,8 +110,11 @@ launchReader = (cbrFile) ->
 app.on 'ready', createWindow
 
 app.on 'activate', ->
-    if win?
-        createWindow
+    createWindow if win?
+    return
+
+app.on 'windows-all-closed', ->
+    app.quit()
     return
 
 # IPC Listener

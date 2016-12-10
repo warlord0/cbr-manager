@@ -25,7 +25,7 @@
             background-color: black;
         }
 
-        #navThumb {
+        /*#navThumb {
             position: fixed;
             bottom: 5px;
             right: 5px;
@@ -35,7 +35,7 @@
 
         #navThumb:hover {
             opacity: 1.0;
-        }
+        }*/
 
         #navleft,
         #navright {
@@ -68,16 +68,34 @@
             position: fixed;
             z-index: 999;
             left: 0;
-            bottom: 0;
+            bottom: -240px;
             height: 240px;
             /* initial width */
             width: 200%;
             zdisplay: none;
             background-color: #222;
+            transition: 1s;
+        }
+
+        #owl-thumb-nav:hover .owl-thumbs  {
+            transition: 1s;
+            bottom: 0;
+        }
+
+        #owl-thumb-nav:hover #navThumbLeft,
+        #owl-thumb-nav:hover #navThumbRight {
+            transition: 1s;
+            bottom: 120px;
         }
 
         #owl-thumb-nav {
-            display: none;
+            zdisplay: none;
+            position: absolute;;
+            left: 0;
+            right: 0;
+            height: 240px;
+            bottom: 0;
+            z-index: 2;
         }
 
         .owl-thumb-item img {
@@ -95,7 +113,7 @@
         #navThumbRight {
             position: fixed;
             /* Half the height of the .ow-thumbs */
-            bottom: 120px;
+            bottom: -120px;
             z-index: 1000;
             opacity: 0.33;
             margin-bottom: -12px;
@@ -121,7 +139,7 @@
 
     <nav>
         <div id="owl-nav">
-            <button class="btn btn-sm btn-default" id="navThumb"><i class="fa fa-chevron-up"></i></button>
+            <!-- <button class="btn btn-sm btn-default" id="navThumb"><i class="fa fa-chevron-up"></i></button> -->
         </div>
         <div id="owl-thumb-nav">
             <button class="btn btn-sm btn-default" id="navThumbLeft"><i class="fa fa-chevron-left"></i></button>
