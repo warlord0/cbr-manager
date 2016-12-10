@@ -329,7 +329,7 @@
         eventEmitter.emit('cover', [cbrFile, path.join('images', 'nocover.png')]);
       } else {
         mkdirp = require('mkdirp');
-        mkdirp(path.join__dirname, 'covercache', filehash.substring(0, 2), function(err) {
+        mkdirp(path.join(__dirname, 'covercache', filehash.substring(0, 2)), function(err) {
           var png;
           if (err) {
             console.error(err);
