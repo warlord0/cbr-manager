@@ -15,7 +15,8 @@ More details can be found in the Wiki [here](https://github.com/warlord0/cbr-man
 
 ## Requirements
 
-7-zip v9.XX installed in your path as it must call the executable 7z (7z.exe in Windows) to extract CBR/CBZ/CB7 files for reading.
+7-zip v9.XX installed in your path as it must call the executable 7z (7z.exe in Windows) to extract CBZ/CB7 files for reading.
+Also because 7-zip does not support newer RAR format files unrar (unrar.exe) is also required in the path.
 
 ## Screen Shots
 

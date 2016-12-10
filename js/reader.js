@@ -73,20 +73,20 @@
                 stream.on('err', function() {
                   console.error(err);
                 });
-                writeable.on('open', function() {
+                writable.on('open', function() {
                   active++;
                 });
                 writable.on('close', function() {
                   active--;
                   if (active === 0) {
                     fs.readdir(tmpPath, function(err, files) {
-                      var j, len1;
+                      var file, j, len1;
                       if (err) {
                         console.error(err);
                       } else {
                         console.log(files);
                         for (j = 0, len1 = files.length; j < len1; j++) {
-                          files = files[j];
+                          file = files[j];
                           switch (path.extname(file)) {
                             case '.png':
                             case '.jpg':
@@ -113,7 +113,7 @@
   };
 
   getPage = function(file) {
-    var $pages, $thumbs, dimensions, error, fs, path, ratio, ref, sizeOf;
+    var $pages, $thumbs, dimensions, error, fs, path, ratio, sizeOf;
     fs = require('fs');
     path = require('path');
     sizeOf = require('image-size');
@@ -121,27 +121,14 @@
       dimensions = sizeOf(file);
       ratio = dimensions.width / dimensions.height;
       $pages = $('#pages');
-      $thumbs = $('div.owl-thumbs');
-      $pages.append('<img data-merge="' + ((ref = ratio < 1) != null ? ref : {
-        1: 2
-      }) + '" class="lazyload" data-src="' + file + '" alt="' + path.basename(file) + '">');
+      $thumbs = $('.owl-thumbs');
+      $pages.append('<img data-merge="' + (ratio < 1 ? 1 : 2) + '" class="lazyload" data-src="' + file + '" alt="' + path.basename(file) + '">');
       $thumbs.append('<div class="owl-thumb-item"><img src="' + file + '" alt="' + path.basename(file, path.extname(file)) + '"></div>');
     } catch (error1) {
       error = error1;
       console.error(error);
     }
   };
-
-  $('#navThumb').on('click', function(e) {
-    if ($(this).children('i').first().hasClass('fs-chevron-up')) {
-      $(this).children('i').switchClass('fa-chevron-up', 'fa-chevron-down');
-    } else {
-      $(this).children('i').switchClass('fa-chevron-down', 'fa-chevron-up');
-    }
-    $('div#owl-thumb-nav').slideToggle({
-      direction: 'down'
-    });
-  });
 
   events = require('events');
 
@@ -192,8 +179,8 @@
     if (totalWidth < $(document).width()) {
       totalWidth = $(document).width();
     }
-    if ($('div.owl-thumbs').width() !== totalWidth) {
-      $('div.owl-thumbs').width(totalWidth);
+    if ($('.owl-thumbs').width() !== totalWidth) {
+      $('.owl-thumbs').width(totalWidth);
     }
     return totalWidth;
   };
@@ -265,9 +252,7 @@
   ctxMenu = new Menu();
 
   makeContextMenu = function() {
-    var i, icon, len, nativeImage, templateItem, templateItems;
-    nativeImage = require('electron').nativeImage;
-    icon = nativeImage.createFromPath('images/star.png');
+    var i, len, templateItem, templateItems;
     templateItems = [
       {
         label: 'First Page',

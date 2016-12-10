@@ -250,7 +250,6 @@ getCover = (cbrFile) ->
                                 -1
                             else
                                 1
-                            return
                         # Strip any non-image files from the beginning of the array
                         while path.extname(entries[0].name) is '' or '.jpg.jpeg.gif.png'.indexOf(path.extname(entries[0].name)) is -1
                             entries.shift()
@@ -344,7 +343,7 @@ makeCover = (cbrFile, filehash, tmpFile) ->
             eventEmitter.emit 'cover', [cbrFile, path.join('images', 'nocover.png')]
         else
             mkdirp = require 'mkdirp' # Make the directory and put the resized image into the covercache
-            mkdirp path.join__dirname, 'covercache', filehash.substring(0, 2), (err) ->
+            mkdirp path.join(__dirname, 'covercache', filehash.substring(0, 2)), (err) ->
                 if err
                     console.error err
                 else
