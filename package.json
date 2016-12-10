@@ -6,7 +6,7 @@
   "scripts": {
     "start": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "package": "electron-packager C:/mnt/data/electron/CBR cbr-manager --out c:/mnt/data/temp --platform win32 --arch x64,ia32 --icon \"app/superhero.ico\""
+    "package": "electron-packager C:/mnt/data/electron/cbr-manager cbr-manager --out c:/mnt/data/temp --platform win32 --arch x64,ia32 --icon \"app/superhero.ico\""
   },
   "keywords": [
     "Tree",

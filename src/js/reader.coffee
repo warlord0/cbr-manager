@@ -4,6 +4,7 @@ pkg = require './package.json'
 configStore = require 'configstore'
 cfg = new configStore(pkg.name)
 pageCount = 0 # TODO: Figure out why we can't get this from the info: callback
+owl = undefined
 
 window.loadPages = (cbrFile) -> # Needs to be a window. function or can't call it from main.js
     fs = require 'fs'
@@ -211,9 +212,71 @@ $('#navThumbLeft').on 'click', (e) ->
     left = thumbs.position().left
     width = thumbWidth()
     increment = $(document).width()
-    unless left is 0 # Don't let the thumbs move past zero
-        thumbs.animage
-            left: 0
-    else if (width - increment) > left and (left - increment) > 0
+    if left is 0 # Don't let the thumbs move past zero
+        # do nothing
+    else if left < 0 and (left + increment) < 0
         thumbs.animate
             left: "+=#{increment}"
+    else
+        thumbs.animate
+            left: 0
+    return
+
+# Context Menu needs to be global
+{remote} = require 'electron'
+{Menu, MenuItem} = remote
+ctxMenu = new Menu()
+
+makeContextMenu = -> # Create an array of menuItem objects that can build the menu
+    {nativeImage} = require 'electron'
+    icon = nativeImage.createFromPath('images/star.png')
+
+    templateItems = [
+            {
+                label: 'First Page'
+                accelerator: 'Home'
+                click: ->
+                    owl.trigger 'to.owl', 0
+                # inco: icon                
+            }
+            {
+                label: 'Previous Page'
+                accelerator: 'PageUp'
+                click: ->
+                    owl.trigger 'prev.owl'
+            }
+            {
+                label: 'Next Page'
+                accelerator: 'PageDown'
+                click: ->
+                    owl.trigger 'next.owl'
+            }
+            {
+                label: 'Last Page'
+                accelerator: 'End'
+                click: ->
+                    owl.trigger 'to.owl', pageCount
+            }
+            {
+                role: 'separator'
+                enabled: false
+            }
+            {
+                label: 'Exit'
+                accelerator: 'X'
+                click: ->
+                    window.close()
+            }
+        ]
+
+    for templateItem in templateItems # Build the context menu
+        ctxMenu.append new MenuItem(templateItem)
+
+    return
+
+makeContextMenu() # Call the menu creation
+
+addEventListener 'contextmenu', (e) -> # trigger the context menu on right click
+    e.preventDefault()
+    ctxMenu.popup remote.getCurrentWindow()
+, false

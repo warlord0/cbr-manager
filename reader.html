@@ -69,7 +69,7 @@
             z-index: 999;
             left: 0;
             bottom: 0;
-            height: 120px;
+            height: 240px;
             /* initial width */
             width: 200%;
             zdisplay: none;
@@ -82,7 +82,7 @@
 
         .owl-thumb-item img {
             opacity: 0.67;
-            height: 120px;
+            height: 240px;
             width: auto;
             float: left;
         }
@@ -94,7 +94,8 @@
         #navThumbLeft,
         #navThumbRight {
             position: fixed;
-            bottom: 60px;
+            /* Half the height of the .ow-thumbs */
+            bottom: 120px;
             z-index: 1000;
             opacity: 0.33;
             margin-bottom: -12px;
@@ -159,7 +160,7 @@
             lazysizes = require('lazysizes/lazysizes.min.js');
     </script>
 
-    <script src="lib/reader.js"></script>
+    <script src="js/reader.js"></script>
     <!-- Insert this line after script imports -->
     <script>
         if (window.module) module = window.module;
