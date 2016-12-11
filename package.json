@@ -1,7 +1,8 @@
 {
   "name": "cbr-manager",
   "version": "0.1.0",
-  "description": "JQuery UI Tree",
+  "description": "Electron based Comic Book Manager and Reader. Suitable for CBR, CBZ and CB7 Comic Book archives.",
+  "homepage": "https://github.com/warlord0/cbr-manager",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -13,19 +14,23 @@
     "test"
   ],
   "author": "warlord0",
-  "license": "ISC",
+  "license": "GPL-3.0",
   "devDependencies": {
     "electron": "^1.4.7",
     "electron-packager": "^8.3.0",
     "gulp": "^3.9.1",
     "gulp-clean-css": "^2.0.13",
+    "gulp-coffee": "^2.3.3",
     "gulp-concat": "^2.6.1",
+    "gulp-header": "^1.8.8",
     "gulp-jshint": "^2.0.4",
     "gulp-less": "^3.3.0",
     "gulp-rename": "^1.2.2",
     "gulp-sass": "^2.3.2",
+    "gulp-sourcemaps": "^1.9.1",
     "gulp-uglify": "^2.0.0",
-    "hover.css": "^2.0.2"
+    "hover.css": "^2.0.2",
+    "jshint": "^2.9.4"
   },
   "dependencies": {
     "bootstrap": "^3.3.7",
@@ -34,8 +39,8 @@
     "jquery": "^1.12.4",
     "jquery-mousewheel": "^3.1.13",
     "jquery.fancytree": "^2.20.0",
+    "jquery.splitter": "^0.24.0",
     "jqueryui": "^1.11.1",
-    "jshint": "^2.9.4",
     "lazysizes": "^3.0.0-rc2",
     "node-7z": "^0.4.0",
     "owl.carousel": "^2.2.0",

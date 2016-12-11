@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="node_modules/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="node_modules/jquery.fancytree/dist/skin-lion/ui.fancytree.min.css">
     <link rel="stylesheet" href="node_modules/jqueryui/jquery-ui.min.css">
+    <link href="node_modules/jquery.splitter/css/jquery.splitter.css" rel="stylesheet"/>
 
     <style type="text/css">
         body {
@@ -25,7 +26,7 @@
             background-color: #000;
         }
 
-        #nav {
+        #oldnav {
             position: absolute;
             top: 0;
             bottom: 0;
@@ -46,7 +47,7 @@
             bottom: 0;
         }
 
-        main {
+        oldmain {
             position: fixed;
             top: 0;
             left: 230px;
@@ -59,7 +60,8 @@
         #wallpaper {
             content: "";
             top: 0;
-            left: 230px;
+            left: 0;
+            /*left: 230px;*/
             bottom: 0;
             right: 0;
             background-image: url(images/superhero-icon.png);
@@ -67,7 +69,7 @@
             background-position: center center;
             z-index: -1;
             opacity: 1.0;
-            position: fixed;
+            position: absolute;
         }
 
         #innertube {
@@ -92,7 +94,7 @@
         /*IE6 fix*/
 
         * html body {
-            padding: 0 0 0 230px;
+            padding: 0 0 0 0; /*230px;*/
             /* Set the last value to the width of the navigation frame */
         }
 
@@ -157,49 +159,36 @@
             -webkit-transform: scale(1.1);
             transform: scale(1.1);
         }
-        #progress {
-            display: none;
-            position: fixed;
-            left: 240px;
-            right: 10px;
-            bottom: 10px;
-            height: 25px;
+        #splitter {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 100%;
+            /*bottom: 0;
+            right: 0;*/
         }
-        #progress .progress-bar {
-            width: 0;
-        }
-        #loading {
-            display: none;
-            position: fixed;
-            left: 240px;
-            width: auto;
-            bottom: 10px;
-            height: 43px;
-            padding: 5px;
-            font-size: 20px;
-            line-height: 33px;
-            color: white;
-            background-color: black;
-            opacity: 0.67;
+        #leftSplit {
+            background-color: white;
         }
     </style>
 </head>
 
 <body>
-    <div id="wallpaper"></div>
-    <main>
-        <div id="innertube">
+    <div id="splitter">
+        <div id="leftSplit">
+            <nav id="nav">
+                <div id="tree" class="fancytree-colorize-hover fancytree-fade-expander"></div>
+            </nav>
         </div>
-        <div id="progress" class="progress">
-            <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-            </div>
+        <div id="rightSplit">
+            <div id="wallpaper"></div>
+            <main>
+                <div id="innertube">
+                </div>
+            </main>
         </div>
-        <div id="loading"><i class="fa fa-spinner fa-pulse fa-fw"></i> Loading</div>
-    </main>
-
-    <nav id="nav">
-        <div id="tree" class="fancytree-colorize-hover fancytree-fade-expander"></div>
-    </nav>
+    </div>
 
     <!-- Insert this line above script imports  -->
     <script>
@@ -217,6 +206,7 @@
             bootstrap = require('bootstrap'),
             tinysort = require('tinysort/dist/tinysort.js').tinysort;
     </script>
+    <script src="node_modules/jquery.splitter/js/jquery.splitter.js"></script>
 
     <script src="js/index.js"></script>
 
