@@ -1,39 +1,43 @@
+'use strict'
+
 {app, BrowserWindow, ipcMain, Menu, MenuItem} = require 'electron'
 path = require 'path'
 url = require 'url'
 pkg = require './package.json'
 configStore = require 'configstore'
 
-# Setup a default configuration
-cfg = new configStore pkg.name,
-    debug: false
-    browser:
-        width: 800
-        height: 600
-        x: 0
-        y: 0
-        maximize: false
-    reader:
-        width: 800
-        height: 600
-        x: 0
-        y: 0
-        maximize: false
+# Setup a configuration file
+cfg = new configStore pkg.name
+    # debug: false
+    # browser:
+    #     width: 800
+    #     height: 600
+    #     x: 0
+    #     y: 0
+    #     maximize: false
+    #     split: '25%'
+    # reader:
+    #     width: 800
+    #     height: 600
+    #     x: 0
+    #     y: 0
+    #     maximize: false
 
 win = reader = mainMenu = null
 
 # Create the main BrowserWindow
 createWindow = ->
+    cfgBrowser = cfg.get 'browser'
     win = new BrowserWindow
-        width: cfg.get('browser').width
-        height: cfg.get('browser').height
-        x: cfg.get('browser').x
-        y: cfg.get('browser').y
+        width: cfgBrowser.width
+        height: cfgBrowser.height
+        x: cfgBrowser.x
+        y: cfgBrowser.y
         frame: true
         resizable: true
         icon: './images/superhero.ico'
 
-    win.maximize() if cfg.get('browser').maximize is true
+    win.maximize() if cfgBrowser.maximize is true
 
     win.loadURL url.format
         pathname: './index.html'
@@ -47,14 +51,18 @@ createWindow = ->
 
     # Save the window settings for next time
     win.on 'close', ->
+        cfgBrowser = cfg.get 'browser'
+        cfgBrowser.width = win.getSize()[0]
+        cfgBrowser.height = win.getSize()[1]
+        cfgBrowser.x = win.getPosition()[0]
+        cfgBrowser.y = win.getPosition()[1]
+        cfgBrowser.split = cfg.get 'browser'
+            .split
         if not win.isMaximized() and not win.isMinimized()
-            cfg.set 'browser',
-                width: win.getSize()[0]
-                height: win.getSize()[1]
-                x: win.getPosition()[0]
-                y: win.getPosition()[1]
-        if win.isMaximized() then cfg.set 'browser',
-            maximize: true
+            cfgBrowser.maximize = false
+        if win.isMaximized()
+            cfgBrowser.maximize = true
+        cfg.set 'browser', cfgBrowser
         return
 
     win.on 'closed', ->
@@ -65,17 +73,18 @@ createWindow = ->
 
 # Launch a Comic Book Reader Window
 launchReader = (cbrFile) ->
+    cfgReader = cfg.get 'reader'
     if reader is null
         reader = new BrowserWindow
-            width: cfg.get('reader').width
-            height: cfg.get('reader').height
-            x: cfg.get('reader').x
-            y: cfg.get('reader').y
+            width: cfgReader.width
+            height: cfgReader.height
+            x: cfgReader.x
+            y: cfgReader.y
             frame: true
             resizable: true
             icon: './images/superhero.ico'
 
-    reader.maximize() if cfg.get('reader').maximize is true
+    reader.maximize() if cfgReader.maximize is true
 
     reader.loadURL url.format
         pathname: './reader.html'
@@ -89,14 +98,16 @@ launchReader = (cbrFile) ->
     reader.webContents.executeJavaScript "loadPages('#{cbrFile}');" # Tell the new window to load the comic book TODO: Is there a better way?
 
     reader.on 'close', ->
+        cfgReader = cfg.get 'reader'
+        cfgReader.width = reader.getSize()[0]
+        cfgReader.height = reader.getSize()[1]
+        cfgReader.x = reader.getPosition()[0]
+        cfgReader.y = reader.getPosition()[1]
         if not reader.isMaximized() and not win.isMinimized()
-            cfg.set 'reader',
-                width: reader.getSize()[0]
-                height: reader.getSize()[1]
-                x: reader.getPosition()[0]
-                y: reader.getPosition()[1]
-        if reader.isMaximized then cfg.set 'reader',
-            maximize: true
+            cfgReader.maximize = false
+        if reader.isMaximized()
+            cfgReader.maximize = true
+        cfg.set 'reader', cfgReader
         return
 
     reader.on 'closed', ->

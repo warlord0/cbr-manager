@@ -2,6 +2,10 @@
 
 ROOT = '/'
 
+pkg = require './package.json'
+configStore = require 'configstore'
+cfg = new configStore(pkg.name)
+
 $ -> # jQuery on ready
     $('#tree').fancytree
         selectMode: 1
@@ -60,6 +64,27 @@ $ -> # jQuery on ready
         init: (e, data) ->
             ## selectNode 'c:\\mnt\\media\\incoming\\mirc'
             return
+
+    $ '#splitter'
+        .width '100%'
+        .height '100%'
+        .split
+            orientation:'vertical'
+            limit:200
+            position: cfg.get('browser').split
+
+    $ window
+        .on 'unload', (e) -> # Save the split position to the config
+            cfgBrowser = cfg.get 'browser'
+            cfgBrowser.split = $('#leftSplit').css 'width'
+            cfg.set 'browser', cfgBrowser
+            return
+
+    $ window
+        .on 'resize', (e) -> # Make sure the splitter div stays the full window height
+            $ '#splitter'
+                .height '100%'
+
     return
 
 # Find and select/activate the specified node
@@ -359,9 +384,7 @@ makeCover = (cbrFile, filehash, tmpFile) ->
         eventEmitter.emit 'cover', [cbrFile, path.join('images', 'nocover.png')]
     return
 
-###
-Use IPC to call main.js and launch the reader
-###
+# Use IPC to call main.js and launch the reader
 {ipcRenderer} = require 'electron'
 
 launchReaderIpc = (cbrFile) ->
