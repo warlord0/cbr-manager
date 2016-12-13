@@ -1,13 +1,14 @@
 {
   "name": "cbr-manager",
+  "productName": "Comic Book Manager",
   "version": "0.1.0",
   "description": "Electron based Comic Book Manager and Reader. Suitable for CBR, CBZ and CB7 Comic Book archives.",
   "homepage": "https://github.com/warlord0/cbr-manager",
-  "main": "main.js",
+  "main": "app/main.js",
   "scripts": {
     "start": "electron .",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "package": "electron-packager C:/mnt/data/electron/cbr-manager cbr-manager --out c:/mnt/data/temp --platform win32 --arch x64,ia32 --icon \"app/superhero.ico\""
+    "pack": "build --dir",
+    "dist": "build"
   },
   "keywords": [
     "Tree",
@@ -15,6 +16,13 @@
   ],
   "author": "warlord0",
   "license": "GPL-3.0",
+  "build" : {
+      "appId": "warlord0-cbrmanager",
+      "win": {
+          "icon": "app/images/superhero.ico",
+          "target": "squirrel"
+      }
+  },
   "devDependencies": {
     "electron": "^1.4.7",
     "electron-packager": "^8.3.0",

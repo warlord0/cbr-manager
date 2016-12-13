@@ -32,7 +32,7 @@ gulp.task('sass', function() {
         .pipe(rename({
             suffix: '.min'
         }))
-        .pipe(gulp.dest('css'));
+        .pipe(gulp.dest('app/css'));
 });
 
 // Compile Our Sass
@@ -41,12 +41,12 @@ gulp.task('less', function() {
             'less/*.less'
         ])
         .pipe(less())
-        .pipe(gulp.dest('css'))
+        .pipe(gulp.dest('app/css'))
         .pipe(cleancss())
         .pipe(rename({
             suffix: '.min'
         }))
-        .pipe(gulp.dest('css'));
+        .pipe(gulp.dest('app/css'));
 });
 
 // Concatenate & Minify JS
@@ -55,10 +55,10 @@ gulp.task('scripts', function() {
             'js/*.js'
         ])
         .pipe(concat('all.js'))
-        .pipe(gulp.dest('js'))
+        .pipe(gulp.dest('app/js'))
         .pipe(rename('all.min.js'))
         .pipe(uglify())
-        .pipe(gulp.dest('js'));
+        .pipe(gulp.dest('app/js'));
 });
 
 gulp.task('coffee', () => {
@@ -81,10 +81,10 @@ gulp.task('coffee', () => {
             bare: true
         }))
         .pipe(sourcemaps.write('.'))
-        .pipe(gulp.dest('.'))
+        .pipe(gulp.dest('app/'))
     &&
     gulp.src([
-            'src/js/*.coffee'
+            'src/coffee/*.coffee'
         ])
         .pipe(header(banner, { pkg : pkg } ))
         .pipe(sourcemaps.init())
@@ -92,12 +92,12 @@ gulp.task('coffee', () => {
             bare: true
         }))
         .pipe(sourcemaps.write('.'))
-        .pipe(gulp.dest('js'));
+        .pipe(gulp.dest('app/js'));
 });
 
 // Watch Files For Changes
 gulp.task('watch', function() {
-    gulp.watch(['src/*.coffee', 'src/js/*.coffee'], ['coffee']);
+    gulp.watch(['src/*.coffee', 'src/coffee/*.coffee'], ['coffee']);
     // gulp.watch('js/*.js', ['lint', 'scripts']);
     // gulp.watch('scss/*.scss', ['sass']);
 });

@@ -6,9 +6,13 @@
  * @license GPL-3.0
  */
 'use strict';
-var Menu, MenuItem, cfg, configStore, ctxMenu, eventEmitter, events, getPage, makeContextMenu, owl, pageCount, pkg, remote, thumbWidth;
+var Menu, MenuItem, app, cfg, configStore, ctxMenu, eventEmitter, events, getPage, makeContextMenu, owl, pageCount, pkg, remote, thumbWidth;
 
-pkg = require('./package.json');
+remote = require('electron').remote;
+
+app = remote.app;
+
+pkg = require('../package.json');
 
 configStore = require('configstore');
 
@@ -25,7 +29,8 @@ window.loadPages = function(cbrFile) {
   tmp = require('tmp');
   tmp.dir({
     prefix: 'cbr_',
-    unsafeCleanup: true
+    unsafeCleanup: true,
+    dir: app.getPath('temp')
   }, _tempDirCreated = function(err, tmpPath, cleanupCallback) {
     var cbr, n7z, unrar;
     if (err) {

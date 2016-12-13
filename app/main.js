@@ -14,7 +14,7 @@ path = require('path');
 
 url = require('url');
 
-pkg = require('./package.json');
+pkg = require('../package.json');
 
 configStore = require('configstore');
 
@@ -32,13 +32,13 @@ createWindow = function() {
     y: cfgBrowser.y,
     frame: true,
     resizable: true,
-    icon: './images/superhero.ico'
+    icon: path.join(__dirname, 'images/superhero.ico')
   });
   if (cfgBrowser.maximize === true) {
     win.maximize();
   }
   win.loadURL(url.format({
-    pathname: './index.html',
+    pathname: path.join(__dirname, 'index.html'),
     protocol: 'file:',
     slashes: true
   }));
@@ -78,14 +78,14 @@ launchReader = function(cbrFile) {
       y: cfgReader.y,
       frame: true,
       resizable: true,
-      icon: './images/superhero.ico'
+      icon: path.join(__dirname, 'images/superhero.ico')
     });
   }
   if (cfgReader.maximize === true) {
     reader.maximize();
   }
   reader.loadURL(url.format({
-    pathname: './reader.html',
+    pathname: path.join(__dirname, 'reader.html'),
     protocol: 'file:',
     slashes: true
   }));

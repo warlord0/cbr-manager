@@ -3,7 +3,7 @@
 {app, BrowserWindow, ipcMain, Menu, MenuItem} = require 'electron'
 path = require 'path'
 url = require 'url'
-pkg = require './package.json'
+pkg = require '../package.json'
 configStore = require 'configstore'
 
 # Setup a configuration file
@@ -35,12 +35,12 @@ createWindow = ->
         y: cfgBrowser.y
         frame: true
         resizable: true
-        icon: './images/superhero.ico'
+        icon: path.join __dirname, 'images/superhero.ico'
 
     win.maximize() if cfgBrowser.maximize is true
 
     win.loadURL url.format
-        pathname: './index.html'
+        pathname: path.join __dirname, 'index.html'
         protocol: 'file:'
         slashes: true
 
@@ -82,12 +82,12 @@ launchReader = (cbrFile) ->
             y: cfgReader.y
             frame: true
             resizable: true
-            icon: './images/superhero.ico'
+            icon: path.join __dirname, 'images/superhero.ico'
 
     reader.maximize() if cfgReader.maximize is true
 
     reader.loadURL url.format
-        pathname: './reader.html'
+        pathname: path.join __dirname, 'reader.html'
         protocol: 'file:'
         slashes: true
 

@@ -1,6 +1,8 @@
 'use strict'
 
-pkg = require './package.json'
+{remote} = require 'electron'
+app = remote.app
+pkg = require '../package.json'
 configStore = require 'configstore'
 cfg = new configStore(pkg.name)
 pageCount = 0 # TODO: Figure out why we can't get this from the info: callback
@@ -14,6 +16,7 @@ window.loadPages = (cbrFile) -> # Needs to be a window. function or can't call i
     tmp.dir
         prefix: 'cbr_'
         unsafeCleanup: true # So it deletes any files within
+        dir: app.getPath('temp')
     , _tempDirCreated = (err, tmpPath, cleanupCallback) ->
         if err
             console.error err

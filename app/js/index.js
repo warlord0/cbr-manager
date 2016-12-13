@@ -6,17 +6,28 @@
  * @license GPL-3.0
  */
 'use strict';
-var ROOT, cfg, configStore, eventEmitter, events, getCover, getDir, getWindowsDrives, ipcRenderer, launchReaderIpc, loadCovers, makeCover, pkg, selectChild, selectNode, setWallpaper;
+var ROOT, app, cfg, configStore, covercache, eventEmitter, events, getCover, getDir, getWindowsDrives, ipcRenderer, launchReaderIpc, loadCovers, makeCover, path, pkg, remote, selectChild, selectNode, setWallpaper, xdgBaseDir;
 
 ROOT = '/';
 
-pkg = require('./package.json');
+remote = require('electron').remote;
+
+app = remote.app;
+
+pkg = require('../package.json');
 
 configStore = require('configstore');
 
 cfg = new configStore(pkg.name);
 
+xdgBaseDir = require('xdg-basedir');
+
+path = require('path');
+
+covercache = null;
+
 $(function() {
+  var ref;
   $('#tree').fancytree({
     selectMode: 1,
     source: function(e, data) {
@@ -24,7 +35,7 @@ $(function() {
       return nodes = getDir(ROOT);
     },
     lazyLoad: function(e, data) {
-      var dfd, fs, nodepath, nodes, path;
+      var dfd, fs, nodepath, nodes;
       dfd = $.Deferred();
       fs = require('fs');
       path = require('path');
@@ -90,11 +101,14 @@ $(function() {
   $(window).on('resize', function(e) {
     return $('#splitter').height('100%');
   });
+  covercache = (ref = cfg.get('covercache')) != null ? ref : path.join(xdgBaseDir.data, 'covercache');
+  cfg.set({
+    covercache: covercache
+  });
 });
 
 selectNode = function(p) {
-  var activeNode, branches, os, path;
-  path = require('path');
+  var activeNode, branches, os;
   os = require('os');
   branches = p.split(path.sep);
   if (os.platform() === 'win32') {
@@ -129,9 +143,8 @@ getWindowsDrives = function() {
 };
 
 getDir = function(p) {
-  var drive, drives, error, file, files, fs, j, k, len, len1, nodes, os, path;
+  var drive, drives, error, file, files, fs, j, k, len, len1, nodes, os;
   fs = require('fs');
-  path = require('path');
   os = require('os');
   nodes = [];
   if (p === ROOT && os.platform() === 'win32') {
@@ -174,9 +187,8 @@ events = require('events');
 eventEmitter = new events.EventEmitter();
 
 eventEmitter.on('cover', function(arg) {
-  var $innertube, id, nativeImage, path;
+  var $innertube, id, nativeImage;
   nativeImage = require('electron').nativeImage;
-  path = require('path');
   $innertube = $('#innertube');
   id = 'id' + (new Date()).getTime();
   $innertube.append('<div class="poster hvr-grow" data-id="' + encodeURI(arg[0]) + '" id="' + id + '""><div class="img"><img class="cover" id="' + path.basename(arg[1]) + '" src="' + arg[1] + '"><p class="caption">' + path.basename(arg[0], path.extname(arg[1])) + '</p></div>');
@@ -193,9 +205,8 @@ $('#innertube').sortable({
 });
 
 setWallpaper = function(p) {
-  var error, file, fs, j, len, path, wallpaper, wallpapers;
+  var error, file, fs, j, len, wallpaper, wallpapers;
   fs = require('fs');
-  path = require('path');
   wallpapers = ['folder.jpg', 'folder.png'];
   for (j = 0, len = wallpapers.length; j < len; j++) {
     wallpaper = wallpapers[j];
@@ -212,9 +223,8 @@ setWallpaper = function(p) {
 };
 
 loadCovers = function(p) {
-  var error, fs, path;
+  var error, fs;
   fs = require('fs');
-  path = require('path');
   try {
     fs.readdir(p, function(err, files) {
       if (err) {
@@ -239,112 +249,117 @@ loadCovers = function(p) {
 };
 
 getCover = function(cbrFile) {
-  var _tempDirCreated, cbr, coverImg, crypto, filehash, fs, imageFiles, n7z, nativeImage, path, tmp, tmpDir, unrar;
-  fs = require('fs');
-  path = require('path');
-  crypto = require('crypto');
-  nativeImage = require('electron').nativeImage;
-  filehash = crypto.createHash('md5').update(path.basename(cbrFile)).digest('hex');
-  coverImg = nativeImage.createFromPath(path.join(__dirname, 'covercache', filehash.substring(0, 2), filehash + '.png'));
-  if (!coverImg.isEmpty()) {
-    eventEmitter.emit('cover', [cbrFile, path.join('covercache', filehash.substring(0, 2), filehash + '.png')]);
-  } else {
-    switch (path.extname(cbrFile)) {
-      case '.cbr':
-        unrar = require('unrar');
-        cbr = new unrar(cbrFile);
-        tmp = require('tmp');
-        tmpDir = tmp.dir({
-          prefix: 'cbr_',
-          unsafeCleanup: true
-        }, _tempDirCreated = function(err, tmpPath, cleanupCallback) {
-          cbr.list(function(err, entries) {
-            var stream, writable;
-            entries.sort(function(a, b) {
-              if (path.basename(a.name) < path.basename(b.name)) {
-                return -1;
-              } else {
-                return 1;
-              }
-            });
-            while (path.extname(entries[0].name) === '' || '.jpg.jpeg.gif.png'.indexOf(path.extname(entries[0].name)) === -1) {
-              entries.shift();
-            }
-            stream = cbr.stream(entries[0].name);
-            stream.on('error', function(err) {
-              console.error(err);
-            });
-            stream.on('end', function() {
-              makeCover(cbrFile, filehash, path.join(tmpPath, path.basename(entries[0].name)));
-            });
-            writable = fs.createWriteStream(path.join(tmpPath, path.basename(entries[0].name)));
-            writable.on('close', function() {
-              cleanupCallback();
-            });
-            stream.pipe(writable);
-          });
-        });
-        break;
-      case '.cbz':
-      case '.cb7':
-        n7z = require('node-7z');
-        cbr = new n7z;
-        path = require('path');
-        imageFiles = [];
-        cbr.list(cbrFile).progress(function(compressedFiles) {
-          imageFiles = imageFiles.concat(compressedFiles);
-        }).then(function(spec) {
+  var _tempDirCreated, cbr, coverImg, crypto, err, filehash, fs, imageFiles, n7z, nativeImage, tmp, tmpDir, unrar;
+  try {
+    fs = require('fs');
+    crypto = require('crypto');
+    nativeImage = require('electron').nativeImage;
+    filehash = crypto.createHash('md5').update(path.basename(cbrFile)).digest('hex');
+    coverImg = nativeImage.createFromPath(path.join(covercache, filehash.substring(0, 2), filehash + '.png'));
+    if (!coverImg.isEmpty()) {
+      eventEmitter.emit('cover', [cbrFile, path.join(covercache, filehash.substring(0, 2), filehash + '.png')]);
+      return;
+    } else {
+      switch (path.extname(cbrFile)) {
+        case '.cbr':
+          unrar = require('unrar');
+          cbr = new unrar(cbrFile);
           tmp = require('tmp');
           tmpDir = tmp.dir({
-            prefix: 'cbz_',
-            unsafeCleanup: true
+            prefix: 'cbr_',
+            unsafeCleanup: true,
+            dir: app.getPath('temp')
           }, _tempDirCreated = function(err, tmpPath, cleanupCallback) {
-            var extractedFiles;
-            if (err) {
-              console.error(err);
-            } else {
-              extractedFiles = [];
-              if (imageFiles.length > 0) {
-                imageFiles.sort(function(a, b) {
-                  if (path.basename(a.name) < path.basename(b.name)) {
-                    return -1;
-                  } else {
-                    return 1;
-                  }
-                });
-                while (path.extname(imageFiles[0].name) === '' || '.jpg.jpeg.gif.png'.indexOf(path.extname(imageFiles[0].name)) === -1) {
-                  imageFiles.shift();
+            cbr.list(function(err, entries) {
+              var stream, writable;
+              entries.sort(function(a, b) {
+                if (path.basename(a.name) < path.basename(b.name)) {
+                  return -1;
+                } else {
+                  return 1;
                 }
-                cbr.extract(cbrFile, tmpPath, {
-                  wildcards: imageFiles[0].name
-                }).progress(function(files) {
-                  extractedFiles = extractedFiles.concat(files);
-                }).then(function() {
-                  if (extractedFiles) {
-                    makeCover(cbrFile, filehash, path.join(tmpPath, path.basename(extractedFiles[0])).replace('\r', ''));
-                  } else {
-                    console.error('Unable to extract files from ' + cbrFile);
-                  }
-                  cleanupCallback();
-                });
-              } else {
-                eventEmitter.emit('cover', [cbrFile, path.join('images', 'nocover.png')]);
+              });
+              while (path.extname(entries[0].name) === '' || '.jpg.jpeg.gif.png'.indexOf(path.extname(entries[0].name)) === -1) {
+                entries.shift();
               }
-            }
+              stream = cbr.stream(entries[0].name);
+              stream.on('error', function(err) {
+                console.error(err);
+              });
+              stream.on('end', function() {
+                makeCover(cbrFile, filehash, path.join(tmpPath, path.basename(entries[0].name)));
+              });
+              writable = fs.createWriteStream(path.join(tmpPath, path.basename(entries[0].name)));
+              writable.on('close', function() {
+                cleanupCallback();
+              });
+              stream.pipe(writable);
+            });
           });
-        })["catch"](function(err) {
-          console.error('Can\'t handle file ' + cbrFile);
-          eventEmitter.emit('cover', [cbrFile, path.join('images', 'nocover.png')]);
-        });
+          break;
+        case '.cbz':
+        case '.cb7':
+          n7z = require('node-7z');
+          cbr = new n7z;
+          imageFiles = [];
+          cbr.list(cbrFile).progress(function(compressedFiles) {
+            imageFiles = imageFiles.concat(compressedFiles);
+          }).then(function(spec) {
+            tmp = require('tmp');
+            tmpDir = tmp.dir({
+              prefix: 'cbz_',
+              unsafeCleanup: true,
+              dir: app.getPath('temp')
+            }, _tempDirCreated = function(err, tmpPath, cleanupCallback) {
+              var extractedFiles;
+              if (err) {
+                console.error(err);
+              } else {
+                extractedFiles = [];
+                if (imageFiles.length > 0) {
+                  imageFiles.sort(function(a, b) {
+                    if (path.basename(a.name) < path.basename(b.name)) {
+                      return -1;
+                    } else {
+                      return 1;
+                    }
+                  });
+                  while (path.extname(imageFiles[0].name) === '' || '.jpg.jpeg.gif.png'.indexOf(path.extname(imageFiles[0].name)) === -1) {
+                    imageFiles.shift();
+                  }
+                  cbr.extract(cbrFile, tmpPath, {
+                    wildcards: imageFiles[0].name
+                  }).progress(function(files) {
+                    extractedFiles = extractedFiles.concat(files);
+                  }).then(function() {
+                    if (extractedFiles[0] != null) {
+                      makeCover(cbrFile, filehash, path.join(tmpPath, path.basename(extractedFiles[0])).replace('\r', ''));
+                    } else {
+                      console.error('Unable to extract files from ' + cbrFile);
+                    }
+                    cleanupCallback();
+                  });
+                } else {
+                  eventEmitter.emit('cover', [cbrFile, path.join('images', 'nocover.png')]);
+                }
+              }
+            });
+          })["catch"](function(err) {
+            console.error('Can\'t handle file ' + cbrFile);
+            eventEmitter.emit('cover', [cbrFile, path.join('images', 'nocover.png')]);
+          });
+      }
     }
+  } catch (error1) {
+    err = error1;
+    return console.error(err);
   }
 };
 
 makeCover = function(cbrFile, filehash, tmpFile) {
-  var buffer, coverImg, error, fs, mkdirp, nativeImage, path;
+  var buffer, coverImg, error, fs, mkdirp, nativeImage;
   try {
     nativeImage = require('electron').nativeImage;
-    path = require('path');
     fs = require('fs');
     coverImg = nativeImage.createFromPath(tmpFile);
     buffer = coverImg.resize({
@@ -354,17 +369,17 @@ makeCover = function(cbrFile, filehash, tmpFile) {
       eventEmitter.emit('cover', [cbrFile, path.join('images', 'nocover.png')]);
     } else {
       mkdirp = require('mkdirp');
-      mkdirp(path.join(__dirname, 'covercache', filehash.substring(0, 2)), function(err) {
+      mkdirp(path.join(covercache, filehash.substring(0, 2)), function(err) {
         var png;
         if (err) {
           console.error(err);
         } else {
           png = buffer.toPng();
-          fs.writeFile(path.join(__dirname, 'covercache', filehash.substring(0, 2), filehash + '.png'), png, function(err) {
+          fs.writeFile(path.join(covercache, filehash.substring(0, 2), filehash + '.png'), png, function(err) {
             if (err) {
               return console.error(err);
             } else {
-              return eventEmitter.emit('cover', [cbrFile, path.join('covercache', filehash.substring(0, 2), filehash) + '.png']);
+              return eventEmitter.emit('cover', [cbrFile, path.join(covercache, filehash.substring(0, 2), filehash) + '.png']);
             }
           });
         }
